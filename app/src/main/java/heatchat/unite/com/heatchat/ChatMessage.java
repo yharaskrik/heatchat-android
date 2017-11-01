@@ -12,7 +12,7 @@ public class ChatMessage {
     private double latitude;
     private double longitude;
 
-    public ChatMessage(String messageText, String messageUser, double latitude, double longitude) {
+    public ChatMessage(String messageUser, String messageText, double latitude, double longitude) {
         this.messageText = messageText;
         this.messageUser = messageUser;
         this.longitude = longitude;
