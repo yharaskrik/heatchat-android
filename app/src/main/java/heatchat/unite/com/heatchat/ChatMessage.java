@@ -25,7 +25,7 @@ public class ChatMessage {
     public Map<String, Object> toMap() {
         HashMap<String, Object> result = new HashMap<>();
         result.put("uid", messageUser);
-        result.put("body", messageText);
+        result.put("text", messageText);
         result.put("time", messageTime);
 
         return result;
