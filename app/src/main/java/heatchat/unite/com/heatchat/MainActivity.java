@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseAnalytics mFirebaseAnaltyics;
     private FirebaseAuth mAuth;
+    private FirebaseUser mUser;
     private FirebaseListAdapter<ChatMessage> adapter;
     private DatabaseReference mDatabase;
     private EditText input;
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             // User is already signed in. Therefore, display
             // a welcome Toast
+            this.mUser = FirebaseAuth.getInstance().getCurrentUser();
             Toast.makeText(this,
                     "Welcome " + FirebaseAuth.getInstance()
                             .getCurrentUser()
@@ -84,13 +86,14 @@ public class MainActivity extends AppCompatActivity {
 
                 // Read the input field and push a new instance
                 // of heatchat.unite.com.heatchat.ChatMessage to the Firebase database
-                FirebaseDatabase.getInstance()
-                        .getReference()
-                        .push()
-                        .setValue(new ChatMessage(input.getText().toString(),
-                                FirebaseAuth.getInstance()
-                                        .getCurrentUser().getUid())
-                        );
+//                FirebaseDatabase.getInstance()
+//                        .getReference()
+//                        .push()
+//                        .setValue(new ChatMessage(input.getText().toString(),
+//                                FirebaseAuth.getInstance().getCurrentUser().getUid())
+//                        );
+
+                writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString());
 
                 // Clear the input
                 input.setText("");
@@ -108,15 +111,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void writeNewPost(String userId, String body) {
-        // Create new post at /user-posts/$userid/$postid and at
-        // /posts/$postid simultaneously
-        String key = mDatabase.child("posts").push().getKey();
         ChatMessage message = new ChatMessage(userId, body);
         Map<String, Object> postValues = message.toMap();
 
+        String key = mDatabase.child("messages").push().getKey();
+
         Map<String, Object> childUpdates = new HashMap<>();
-        childUpdates.put("/posts/" + key, postValues);
-        childUpdates.put("/user-posts/" + userId + "/" + key, postValues);
+        childUpdates.put("/messages/" + key, postValues);
 
         mDatabase.updateChildren(childUpdates);
     }
@@ -135,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
 
         // [START single_value_read]
         final String userId = mAuth.getCurrentUser().getUid();
-        mDatabase.child("users").child(userId).addListenerForSingleValueEvent(
+        mDatabase.child("/messages/").addListenerForSingleValueEvent(
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
@@ -187,9 +188,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-//                            Log.d(TAG, "signInAnonymously:success");
-                            FirebaseUser user = mAuth.getCurrentUser();
+//                             Sign in success, update UI with the signed-in user's information
+                            Log.d("AnonymouseAuth", "signInAnonymously:success");
+                            mUser = mAuth.getCurrentUser();
 //                            updateUI(user);
                         } else {
                             // If sign in fails, display a message to the user.
@@ -211,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
 
-        FirebaseUser currentUser = mAuth.getCurrentUser();
+        mUser = mAuth.getCurrentUser();
 
     }
 }
