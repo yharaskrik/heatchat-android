@@ -1,15 +1,9 @@
 package heatchat.unite.com.heatchat;
 
-import android.*;
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -17,15 +11,11 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.User;
 import com.firebase.ui.database.FirebaseListAdapter;
 import com.google.android.gms.location.LocationRequest;
@@ -41,14 +31,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import org.reactivestreams.Subscription;
-
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
 public class MainActivity extends AppCompatActivity {
@@ -73,6 +59,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
 
         if ( ContextCompat.checkSelfPermission( this, android.Manifest.permission.ACCESS_FINE_LOCATION ) != PackageManager.PERMISSION_GRANTED ) {
 
@@ -157,57 +145,6 @@ public class MainActivity extends AppCompatActivity {
         childUpdates.put("/messages/" + key, postValues);
 
         mDatabase.updateChildren(childUpdates);
-    }
-
-    private void submitPost() {
-        final String body = input.getText().toString();
-
-        if (TextUtils.isEmpty(body)) {
-            input.setError(REQUIRED);
-            return;
-        }
-
-        // Disable button so there are no multi-posts
-        setEditingEnabled(false);
-        Toast.makeText(this, "Posting...", Toast.LENGTH_SHORT).show();
-
-        // [START single_value_read]
-        final String userId = mAuth.getCurrentUser().getUid();
-        mDatabase.child("/messages/").addListenerForSingleValueEvent(
-                new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        // Get user value
-                        User user = dataSnapshot.getValue(User.class);
-
-                        // [START_EXCLUDE]
-                        if (user == null) {
-                            // User is null, error out
-//                            Log.e(TAG, "User " + userId + " is unexpectedly null");
-//                            Toast.makeText(NewPostActivity.this,
-//                                    "Error: could not fetch user.",
-//                                    Toast.LENGTH_SHORT).show();
-
-                        } else {
-                            // Write new post
-                            writeNewPost(mAuth.getCurrentUser().getUid(), body);
-                        }
-
-                        // Finish this Activity, back to the stream
-                        setEditingEnabled(true);
-                        finish();
-                        // [END_EXCLUDE]
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-//                        Log.w(TAG, "getUser:onCancelled", databaseError.toException());
-                        // [START_EXCLUDE]
-                        setEditingEnabled(true);
-                        // [END_EXCLUDE]
-                    }
-                });
-        // [END single_value_read]
     }
 
     @Override
