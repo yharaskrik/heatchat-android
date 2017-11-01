@@ -9,13 +9,17 @@ public class ChatMessage {
     private String messageText;
     private String messageUser;
     private long messageTime;
+    private double latitude;
+    private double longitude;
 
-    public ChatMessage(String messageText, String messageUser) {
+    public ChatMessage(String messageText, String messageUser, double latitude, double longitude) {
         this.messageText = messageText;
         this.messageUser = messageUser;
+        this.longitude = longitude;
+        this.latitude = latitude;
 
         // Initialize to current time
-        this.messageTime = new Date().getTime();
+        this.messageTime = (long) (new Date().getTime() / 1000);
     }
 
     public ChatMessage(){
@@ -27,6 +31,8 @@ public class ChatMessage {
         result.put("uid", messageUser);
         result.put("text", messageText);
         result.put("time", messageTime);
+        result.put("lat", latitude);
+        result.put("lon", longitude);
 
         return result;
     }
