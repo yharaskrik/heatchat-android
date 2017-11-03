@@ -12,19 +12,20 @@
 
     android:layout_height="wrap_content"
 
-    android:paddingTop="8dp">
+    android:paddingTop="8dp"
+    android:layout_marginLeft="8dp">
 
     <TextView
         android:id="@+id/text_message_body"
         android:text="hi man, how are you?"
-        android:background="@drawable/rounded_rectangle_orange"
+        android:background="@drawable/rounded_rectangle_green"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:maxWidth="240dp"
         android:padding="8dp"
         android:textColor="#ffffff"
         android:layout_marginTop="4dp"
-        android:layout_marginLeft="8dp" />
+        android:layout_marginStart="8dp" />
 
     <TextView
         android:id="@+id/text_message_time"
