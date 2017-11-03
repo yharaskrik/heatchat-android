@@ -1,6 +1,8 @@
 package heatchat.unite.com.heatchat;
 
+import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,9 +19,10 @@ import java.util.List;
  * Created by jaybell on 02/11/17.
  */
 
-public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class ChatMessageAdapter extends RecyclerView.Adapter {
 
     private List<ChatMessage> chatMessages;
+    private Context mContext;
 
     private static final int VIEW_TYPE_MESSAGE_SENT = 1;
     private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
@@ -36,7 +39,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     }
 
     public ChatMessageAdapter(List<ChatMessage> messageList) {
+//        this.mContext = context;
         this.chatMessages = messageList;
+        Log.d("Message List", messageList.toString());
     }
 
     @Override
@@ -46,13 +51,16 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         if (viewType == VIEW_TYPE_MESSAGE_SENT) {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.sent_message, parent, false);
+            Log.d("Item: ", "Adding sent item");
             return new ChatMessageSendHolder(view);
         }
-        if (viewType == VIEW_TYPE_MESSAGE_RECEIVED) {
+        else if (viewType == VIEW_TYPE_MESSAGE_RECEIVED) {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.sent_message, parent, false);
+            Log.d("Item: ", "Adding not sent item");
             return new ChatMessageReceivedHolder(view);
         }
+        Log.d("Item: ", "Neither sent nor received");
         return null;
     }
 
@@ -71,6 +79,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     @Override
     public int getItemCount() {
+        Log.d("Size: ", Integer.toString(chatMessages.size()));
         return chatMessages.size();
     }
 
@@ -95,6 +104,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
         ChatMessageReceivedHolder(View view) {
             super(view);
+            Log.d("Received", "");
             this.text = (TextView) view.findViewById(R.id.text_message_body);
             this.time = (TextView) view.findViewById(R.id.text_message_time);
         }
