@@ -10,14 +10,22 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Adapter;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.firebase.ui.auth.User;
 import com.firebase.ui.database.FirebaseListAdapter;
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -29,9 +37,12 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.reactivex.disposables.Disposable;
@@ -42,14 +53,17 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAnalytics mFirebaseAnaltyics;
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
-    private FirebaseListAdapter<ChatMessage> adapter;
+    private ChatMessageAdapter adapter;
     private DatabaseReference mDatabase;
     private EditText input;
     private FloatingActionButton mSubmitButton;
     private int requestCode = 0;
 
+    private RecyclerView recyclerView;
     private double latitude;
     private double longitude;
+
+    private List<ChatMessage> dataset;
 
     private LocationManager lm;
 
@@ -60,7 +74,17 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
+        LinearLayoutManager llm = new LinearLayoutManager(this);
+        llm.setOrientation(LinearLayoutManager.VERTICAL);
+
+        dataset = new ArrayList<>();
+        adapter = new ChatMessageAdapter(dataset);
+        recyclerView = (RecyclerView) findViewById(R.id.list_of_messages);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(llm);
+        recyclerView.setAdapter(this.adapter);
+
+        this.mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
 
         if ( ContextCompat.checkSelfPermission( this, android.Manifest.permission.ACCESS_FINE_LOCATION ) != PackageManager.PERMISSION_GRANTED ) {
 
@@ -123,6 +147,30 @@ public class MainActivity extends AppCompatActivity {
                 input.setText("");
             }
         });
+
+        displayChatMessages();
+    }
+
+    private void displayChatMessages() {
+
+        ValueEventListener messageListener =  new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot message: dataSnapshot.getChildren()) {
+                    ChatMessage cm = message.getValue(ChatMessage.class);
+                    dataset.add(cm);
+                    adapter.notifyDataSetChanged();
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+
+        mDatabase.child("messages").addValueEventListener(messageListener);
+
     }
 
     private void setEditingEnabled(boolean enabled) {
@@ -155,31 +203,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void signInAnonymously() {
-//        showProgressDialog();
-        // [START signin_anonymously]
         mAuth.signInAnonymously()
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-//                             Sign in success, update UI with the signed-in user's information
                             Log.d("AnonymouseAuth", "signInAnonymously:success");
                             mUser = mAuth.getCurrentUser();
-//                            updateUI(user);
+
+                            displayChatMessages();
                         } else {
                             // If sign in fails, display a message to the user.
-//                            Log.w(TAG, "signInAnonymously:failure", task.getException());
-//                            Toast.makeText(AnonymousAuthActivity.this, "Authentication failed.",
-//                                    Toast.LENGTH_SHORT).show();
-//                            updateUI(null);
+                            displayChatMessages();
                         }
-
-                        // [START_EXCLUDE]
-//                        hideProgressDialog();
-                        // [END_EXCLUDE]
                     }
                 });
-        // [END signin_anonymously]
     }
 
     @Override
