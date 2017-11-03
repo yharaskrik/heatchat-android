@@ -6,24 +6,32 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
+import com.google.firebase.auth.FirebaseAuth;
 
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 /**
  * Created by jaybell on 02/11/17.
  */
 
-public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.ChatMessageViewHolder> {
+public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private List<ChatMessage> chatMessages;
 
-    public class ChatMessageViewHolder extends RecyclerView.ViewHolder {
-        public TextView text;
+    private static final int VIEW_TYPE_MESSAGE_SENT = 1;
+    private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
 
-        public ChatMessageViewHolder(View view) {
-            super(view);
-            this.text = (TextView) view.findViewById(R.id.message_text);
+    @Override
+    public int getItemViewType(int position) {
+        ChatMessage message = (ChatMessage) chatMessages.get(position);
+
+        if (message.getUid().equals(FirebaseAuth.getInstance().getUid())) {
+            return VIEW_TYPE_MESSAGE_SENT;
+        } else {
+            return VIEW_TYPE_MESSAGE_RECEIVED;
         }
     }
 
@@ -32,22 +40,69 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<ChatMessageAdapter.
     }
 
     @Override
-    public ChatMessageViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View itemView = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.message, parent, false);
+    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View view;
 
-        return new ChatMessageViewHolder(itemView);
+        if (viewType == VIEW_TYPE_MESSAGE_SENT) {
+            view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.sent_message, parent, false);
+            return new ChatMessageSendHolder(view);
+        }
+        if (viewType == VIEW_TYPE_MESSAGE_RECEIVED) {
+            view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.sent_message, parent, false);
+            return new ChatMessageReceivedHolder(view);
+        }
+        return null;
     }
 
     @Override
-    public void onBindViewHolder(ChatMessageViewHolder holder, int position) {
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         ChatMessage message = chatMessages.get(position);
 
-        holder.text.setText(message.getText());
+        switch (holder.getItemViewType()) {
+            case VIEW_TYPE_MESSAGE_SENT:
+                ((ChatMessageAdapter.ChatMessageSendHolder) holder).bind(message);
+                break;
+            case VIEW_TYPE_MESSAGE_RECEIVED:
+                ((ChatMessageAdapter.ChatMessageReceivedHolder) holder).bind(message);
+        }
     }
 
     @Override
     public int getItemCount() {
         return chatMessages.size();
     }
+
+    public class ChatMessageSendHolder extends RecyclerView.ViewHolder {
+        public TextView text, time;
+
+        ChatMessageSendHolder(View view) {
+            super(view);
+            this.text = (TextView) view.findViewById(R.id.text_message_body);
+            this.time = (TextView) view.findViewById(R.id.text_message_time);
+        }
+
+        void bind(ChatMessage message) {
+            text.setText(message.getText());
+            time.setText(new SimpleDateFormat("HH:mm")
+                    .format(new Date(message.getTime() * 1000L)));
+        }
+    }
+
+    public class ChatMessageReceivedHolder extends RecyclerView.ViewHolder {
+        public TextView text, time;
+
+        ChatMessageReceivedHolder(View view) {
+            super(view);
+            this.text = (TextView) view.findViewById(R.id.text_message_body);
+            this.time = (TextView) view.findViewById(R.id.text_message_time);
+        }
+        void bind(ChatMessage message) {
+            text.setText(message.getText());
+            time.setText(new SimpleDateFormat("HH:mm")
+                    .format(new Date(message.getTime() * 1000L)));
+        }
+    }
+
 }
