@@ -18,6 +18,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -56,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private ChatMessageAdapter adapter;
     private DatabaseReference mDatabase;
     private EditText input;
-    private FloatingActionButton mSubmitButton;
+    private Button mSubmitButton;
     private int requestCode = 0;
 
     private RecyclerView recyclerView;
@@ -112,8 +113,8 @@ public class MainActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance().getReference();
 
-        input = findViewById(R.id.input);
-        mSubmitButton = findViewById(R.id.fab);
+        input = findViewById(R.id.edittext_chatbox);
+        mSubmitButton = findViewById(R.id.button_chatbox_send);
 
         if(FirebaseAuth.getInstance().getCurrentUser() == null) {
             // Start sign in/sign up activity
@@ -133,14 +134,9 @@ public class MainActivity extends AppCompatActivity {
                     .show();
         }
 
-        FloatingActionButton fab =
-                (FloatingActionButton)findViewById(R.id.fab);
-
-        fab.setOnClickListener(new View.OnClickListener() {
+        mSubmitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                EditText input = (EditText)findViewById(R.id.input);
-
                 writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString());
 
                 // Clear the input
