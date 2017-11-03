@@ -66,8 +66,6 @@ public class MainActivity extends AppCompatActivity {
 
     private List<ChatMessage> dataset;
 
-    private LocationManager lm;
-
     private static final String REQUIRED = "Required";
 
     @Override
@@ -76,14 +74,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         LinearLayoutManager llm = new LinearLayoutManager(this);
-        llm.setOrientation(LinearLayoutManager.VERTICAL);
 
         dataset = new ArrayList<>();
         adapter = new ChatMessageAdapter(dataset);
         recyclerView = (RecyclerView) findViewById(R.id.list_of_messages);
         recyclerView.setHasFixedSize(true);
-        recyclerView.setLayoutManager(llm);
         recyclerView.setAdapter(this.adapter);
+        recyclerView.setLayoutManager(llm);
 
         this.mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
 
@@ -145,6 +142,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         displayChatMessages();
+
+        Log.d("Size: ", findViewById(R.id.list_of_messages).toString());
     }
 
     private void displayChatMessages() {
@@ -154,9 +153,10 @@ public class MainActivity extends AppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for (DataSnapshot message: dataSnapshot.getChildren()) {
                     ChatMessage cm = message.getValue(ChatMessage.class);
+//                    Log.d("New", "Item");
                     dataset.add(cm);
-                    adapter.notifyDataSetChanged();
                 }
+                adapter.notifyDataSetChanged();
             }
 
             @Override
@@ -166,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
         };
 
         mDatabase.child("messages").addValueEventListener(messageListener);
-
     }
 
     private void setEditingEnabled(boolean enabled) {
