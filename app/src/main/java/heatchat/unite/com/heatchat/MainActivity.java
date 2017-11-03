@@ -1,32 +1,28 @@
 package heatchat.unite.com.heatchat;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.LocationManager;
+import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.format.DateFormat;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Adapter;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.firebase.ui.database.FirebaseListAdapter;
-import com.firebase.ui.database.FirebaseRecyclerAdapter;
-import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -39,8 +35,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText input;
     private Button mSubmitButton;
     private int requestCode = 0;
+    private Toolbar toolbar;
+    LinearLayoutManager llm;
 
     private RecyclerView recyclerView;
     private double latitude;
@@ -67,15 +63,15 @@ public class MainActivity extends AppCompatActivity {
 
     private List<ChatMessage> dataset;
 
-    private static final String REQUIRED = "Required";
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        LinearLayoutManager llm = new LinearLayoutManager(this);
+        toolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(toolbar);
 
+        llm = new LinearLayoutManager(this);
         dataset = new ArrayList<>();
         adapter = new ChatMessageAdapter(dataset);
         recyclerView = (RecyclerView) findViewById(R.id.list_of_messages);
@@ -150,13 +146,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+        input.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
             public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
                 recyclerView.smoothScrollToPosition(adapter.getItemCount());
             }
         });
-        Log.d("Size: ", findViewById(R.id.list_of_messages).toString());
+
+//        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//                super.onScrollStateChanged(recyclerView, newState);
+//                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+//                    getSupportActionBar().show();
+//                }
+//                else if (newState == RecyclerView.SCROLL_STATE_DRAGGING || newState == RecyclerView.SCROLL_STATE_SETTLING) {
+//                    getSupportActionBar().hide();
+//                }
+//            }
+//
+//            @Override
+//            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+//                super.onScrolled(recyclerView, dx, dy);
+//            }
+//        });
     }
 
     private void displayChatMessages() {
@@ -198,15 +211,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void writeNewPost(String userId, String body) {
 
-        ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
-        Map<String, Object> postValues = message.toMap();
+        if (body.trim() != "") {
+            ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
+            Map<String, Object> postValues = message.toMap();
 
-        String key = mDatabase.child("messages").push().getKey();
+            String key = mDatabase.child("messages").push().getKey();
 
-        Map<String, Object> childUpdates = new HashMap<>();
-        childUpdates.put("/messages/" + key, postValues);
+            Map<String, Object> childUpdates = new HashMap<>();
+            childUpdates.put("/messages/" + key, postValues);
 
-        mDatabase.updateChildren(childUpdates);
+            mDatabase.updateChildren(childUpdates);
+        }
     }
 
     @Override
@@ -227,7 +242,26 @@ public class MainActivity extends AppCompatActivity {
 
                             displayChatMessages();
                         } else {
-                            // If sign in fails, display a message to the user.
+                            AlertDialog.Builder builder;
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                builder = new AlertDialog.Builder(MainActivity.this, android.R.style.Theme_Material_Dialog_Alert);
+                            } else {
+                                builder = new AlertDialog.Builder(MainActivity.this);
+                            }
+                            builder.setTitle("Authentication Failed")
+                                    .setMessage("Authentication to Heatchat servers failed. Press ok to try again.")
+                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            signInAnonymously();
+                                        }
+                                    })
+                                    .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            // do nothing
+                                        }
+                                    })
+                                    .setIcon(android.R.drawable.ic_dialog_alert)
+                                    .show();
                         }
                     }
                 });
@@ -238,6 +272,9 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
         mUser = mAuth.getCurrentUser();
+
+
+        recyclerView.smoothScrollToPosition(adapter.getItemCount());
 
     }
 }
