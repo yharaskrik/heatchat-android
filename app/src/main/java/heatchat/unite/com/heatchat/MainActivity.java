@@ -34,6 +34,7 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -129,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
                             .getDisplayName(),
                     Toast.LENGTH_LONG)
                     .show();
+            displayChatMessages();
         }
 
         mSubmitButton.setOnClickListener(new View.OnClickListener() {
@@ -141,31 +143,48 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        displayChatMessages();
+        input.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                recyclerView.smoothScrollToPosition(adapter.getItemCount());
+            }
+        });
 
+        recyclerView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                recyclerView.smoothScrollToPosition(adapter.getItemCount());
+            }
+        });
         Log.d("Size: ", findViewById(R.id.list_of_messages).toString());
     }
 
     private void displayChatMessages() {
 
-        ValueEventListener messageListener =  new ValueEventListener() {
+        ChildEventListener messageListener =  new ChildEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot message: dataSnapshot.getChildren()) {
-                    ChatMessage cm = message.getValue(ChatMessage.class);
-//                    Log.d("New", "Item");
-                    dataset.add(cm);
-                }
+            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
+                ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
+
+                dataset.add(cm);
                 adapter.notifyDataSetChanged();
+                recyclerView.smoothScrollToPosition(adapter.getItemCount());
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {}
 
-            }
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {}
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {}
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {}
         };
 
-        mDatabase.child("messages").addValueEventListener(messageListener);
+        mDatabase.child("messages").addChildEventListener(messageListener);
     }
 
     private void setEditingEnabled(boolean enabled) {
@@ -209,7 +228,6 @@ public class MainActivity extends AppCompatActivity {
                             displayChatMessages();
                         } else {
                             // If sign in fails, display a message to the user.
-                            displayChatMessages();
                         }
                     }
                 });

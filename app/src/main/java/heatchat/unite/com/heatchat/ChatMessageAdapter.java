@@ -41,7 +41,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
     public ChatMessageAdapter(List<ChatMessage> messageList) {
 //        this.mContext = context;
         this.chatMessages = messageList;
-        Log.d("Message List", messageList.toString());
     }
 
     @Override
@@ -51,16 +50,13 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
         if (viewType == VIEW_TYPE_MESSAGE_SENT) {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.sent_message, parent, false);
-            Log.d("Item: ", "Adding sent item");
             return new ChatMessageSendHolder(view);
         }
         else if (viewType == VIEW_TYPE_MESSAGE_RECEIVED) {
             view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.sent_message, parent, false);
-            Log.d("Item: ", "Adding not sent item");
+                    .inflate(R.layout.received_message, parent, false);
             return new ChatMessageReceivedHolder(view);
         }
-        Log.d("Item: ", "Neither sent nor received");
         return null;
     }
 
@@ -79,7 +75,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
 
     @Override
     public int getItemCount() {
-        Log.d("Size: ", Integer.toString(chatMessages.size()));
         return chatMessages.size();
     }
 
@@ -88,6 +83,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
 
         ChatMessageSendHolder(View view) {
             super(view);
+            Log.d("Sent", "");
             this.text = (TextView) view.findViewById(R.id.text_message_body);
             this.time = (TextView) view.findViewById(R.id.text_message_time);
         }
