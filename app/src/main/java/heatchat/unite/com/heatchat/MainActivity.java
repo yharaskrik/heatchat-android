@@ -42,6 +42,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
@@ -57,19 +59,20 @@ public class MainActivity extends AppCompatActivity {
     private ChatMessageAdapter messageAdapter;
     private SchoolListAdapter schoolListAdapter;
     private DatabaseReference mDatabase;
-    private EditText input;
-    private Button mSubmitButton;
     private int requestCode = 0;
-    private Toolbar toolbar;
     LinearLayoutManager llm;
 
-    private DrawerLayout mDrawerLayout;
+    @BindView(R.id.my_toolbar) Toolbar toolbar;
+    @BindView(R.id.edittext_chatbox) EditText input;
+    @BindView(R.id.button_chatbox_send) Button mSubmitButton;
+    @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
+    @BindView(R.id.list_of_messages) RecyclerView recyclerView;
+    @BindView(R.id.schools_list) RecyclerView schoolsRecyclerView;
+
     private CharSequence mTitle;
     private CharSequence mDrawerTitle;
     private ActionBarDrawerToggle mDrawerToggle;
 
-    private RecyclerView recyclerView;
-    private RecyclerView schoolsRecyclerView;
     private double latitude;
     private double longitude;
 
@@ -81,15 +84,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        toolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(toolbar);
+
+        ButterKnife.bind(this);
+
+        mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
+        mAuth = FirebaseAuth.getInstance();
+        mDatabase = FirebaseDatabase.getInstance().getReference();
 
         initializeDrawer();
 
         llm = new LinearLayoutManager(this);
         dataset = new ArrayList<>();
         messageAdapter = new ChatMessageAdapter(dataset);
-        recyclerView = (RecyclerView) findViewById(R.id.list_of_messages);
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(this.messageAdapter);
         recyclerView.setLayoutManager(llm);
@@ -116,13 +123,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         }
-
-        mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
-        mAuth = FirebaseAuth.getInstance();
-        mDatabase = FirebaseDatabase.getInstance().getReference();
-
-        input = findViewById(R.id.edittext_chatbox);
-        mSubmitButton = findViewById(R.id.button_chatbox_send);
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             // Start sign in/sign up activity
@@ -273,42 +273,24 @@ public class MainActivity extends AppCompatActivity {
 
         mUser = mAuth.getCurrentUser();
 
-
         recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
 
     }
 
     private void initializeDrawer() {
-        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 
         // Set the messageAdapter for the list view
         schools = new ArrayList<>();
         schoolListAdapter = new SchoolListAdapter(schools);
-        schoolsRecyclerView = (RecyclerView) findViewById(R.id.schools_list);
-        Log.d("View", schoolsRecyclerView.toString());
-        schoolsRecyclerView.setHasFixedSize(true);
-        schoolsRecyclerView.setAdapter(this.schoolListAdapter);
-        schoolsRecyclerView.setLayoutManager(llm);
 
         // Set the list's click listener
-        mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
-                R.string.drawer_open, R.string.drawer_close) {
-
-            /** Called when a drawer has settled in a completely closed state. */
-            public void onDrawerClosed(View view) {
-                super.onDrawerClosed(view);
-                getActionBar().setTitle(mTitle);
-                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
-            }
-
-            /** Called when a drawer has settled in a completely open state. */
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-                getActionBar().setTitle(mDrawerTitle);
-                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
-            }
-        };
-//        .setOnItemClickListener(new DrawerItemClickListener());
+        mDrawerToggle = new ActionBarDrawerToggle(
+                this,
+                mDrawerLayout,
+                toolbar,
+                R.string.drawer_open,
+                R.string.drawer_close);
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
 
         displaySchools();
     }
