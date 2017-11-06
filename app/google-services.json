@@ -40,15 +40,15 @@
           "status": 2,
           "other_platform_oauth_client": [
             {
+              "client_id": "1048720965159-nu4ug9dlbp6pdmeetiug0897g9o81e74.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
               "client_id": "1048720965159-jlc4ufdp4qoal6jqmvugh8272kj142tk.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.bam.HeatChat"
               }
-            },
-            {
-              "client_id": "1048720965159-nu4ug9dlbp6pdmeetiug0897g9o81e74.apps.googleusercontent.com",
-              "client_type": 3
             }
           ]
         },
