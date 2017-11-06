@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.navDrawer;
+package heatchat.unite.com.heatchat.adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -10,6 +10,7 @@ import android.widget.TextView;
 import java.util.List;
 
 import heatchat.unite.com.heatchat.R;
+import heatchat.unite.com.heatchat.models.School;
 
 /**
  * Created by jaybell on 05/11/17.

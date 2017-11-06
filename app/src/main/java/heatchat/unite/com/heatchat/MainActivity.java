@@ -1,8 +1,6 @@
 package heatchat.unite.com.heatchat;
 
 import android.Manifest;
-import android.app.Fragment;
-import android.app.FragmentManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -21,7 +19,6 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -45,6 +42,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
+import heatchat.unite.com.heatchat.models.ChatMessage;
+import heatchat.unite.com.heatchat.models.School;
+import heatchat.unite.com.heatchat.adapters.SchoolListAdapter;
 import io.reactivex.disposables.Disposable;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
@@ -53,7 +54,8 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAnalytics mFirebaseAnaltyics;
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
-    private ChatMessageAdapter adapter;
+    private ChatMessageAdapter messageAdapter;
+    private SchoolListAdapter schoolListAdapter;
     private DatabaseReference mDatabase;
     private EditText input;
     private Button mSubmitButton;
@@ -61,18 +63,18 @@ public class MainActivity extends AppCompatActivity {
     private Toolbar toolbar;
     LinearLayoutManager llm;
 
-    private String[] mPlanetTitles;
     private DrawerLayout mDrawerLayout;
-    private ListView mDrawerList;
     private CharSequence mTitle;
     private CharSequence mDrawerTitle;
     private ActionBarDrawerToggle mDrawerToggle;
 
     private RecyclerView recyclerView;
+    private RecyclerView schoolsRecyclerView;
     private double latitude;
     private double longitude;
 
     private List<ChatMessage> dataset;
+    private List<School> schools;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,10 +88,10 @@ public class MainActivity extends AppCompatActivity {
 
         llm = new LinearLayoutManager(this);
         dataset = new ArrayList<>();
-        adapter = new ChatMessageAdapter(dataset);
+        messageAdapter = new ChatMessageAdapter(dataset);
         recyclerView = (RecyclerView) findViewById(R.id.list_of_messages);
         recyclerView.setHasFixedSize(true);
-        recyclerView.setAdapter(this.adapter);
+        recyclerView.setAdapter(this.messageAdapter);
         recyclerView.setLayoutManager(llm);
 
         this.mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
@@ -154,14 +156,14 @@ public class MainActivity extends AppCompatActivity {
         input.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                recyclerView.smoothScrollToPosition(adapter.getItemCount());
+                recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
             }
         });
 
         input.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override
             public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                recyclerView.smoothScrollToPosition(adapter.getItemCount());
+                recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
             }
         });
     }
@@ -174,8 +176,8 @@ public class MainActivity extends AppCompatActivity {
                 ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
 
                 dataset.add(cm);
-                adapter.notifyDataSetChanged();
-                recyclerView.smoothScrollToPosition(adapter.getItemCount());
+                messageAdapter.notifyDataSetChanged();
+                recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
             }
 
             @Override
@@ -272,18 +274,22 @@ public class MainActivity extends AppCompatActivity {
         mUser = mAuth.getCurrentUser();
 
 
-        recyclerView.smoothScrollToPosition(adapter.getItemCount());
+        recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
 
     }
 
     private void initializeDrawer() {
-//        mPlanetTitles = getResources().getStringArray();
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-        mDrawerList = (ListView) findViewById(R.id.left_drawer);
 
-        // Set the adapter for the list view
-        mDrawerList.setAdapter(new ArrayAdapter<String>(this,
-                R.layout.drawer_list_item, mPlanetTitles));
+        // Set the messageAdapter for the list view
+        schools = new ArrayList<>();
+        schoolListAdapter = new SchoolListAdapter(schools);
+        schoolsRecyclerView = (RecyclerView) findViewById(R.id.schools_list);
+        Log.d("View", schoolsRecyclerView.toString());
+        schoolsRecyclerView.setHasFixedSize(true);
+        schoolsRecyclerView.setAdapter(this.schoolListAdapter);
+        schoolsRecyclerView.setLayoutManager(llm);
+
         // Set the list's click listener
         mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,
                 R.string.drawer_open, R.string.drawer_close) {
@@ -302,7 +308,43 @@ public class MainActivity extends AppCompatActivity {
                 invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
             }
         };
-        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+//        .setOnItemClickListener(new DrawerItemClickListener());
+
+        displaySchools();
+    }
+
+    private void displaySchools() {
+        ChildEventListener schoolListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                School school = dataSnapshot.getValue(School.class);
+
+                schools.add(school);
+                schoolListAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+
+        mDatabase.child("schools").addChildEventListener(schoolListener);
     }
 
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
@@ -315,21 +357,12 @@ public class MainActivity extends AppCompatActivity {
     /** Swaps fragments in the main content view */
     private void selectItem(int position) {
         // Create a new fragment and specify the planet to show based on position
-        Fragment fragment = new PlanetFragment();
-        Bundle args = new Bundle();
-        args.putInt(PlanetFragment.ARG_PLANET_NUMBER, position);
-        fragment.setArguments(args);
 
-        // Insert the fragment by replacing any existing fragment
-        FragmentManager fragmentManager = getFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.content_frame, fragment)
-                .commit();
 
         // Highlight the selected item, update the title, and close the drawer
-        mDrawerList.setItemChecked(position, true);
-        setTitle(mPlanetTitles[position]);
-        mDrawerLayout.closeDrawer(mDrawerList);
+//        mDrawerList.setItemChecked(position, true);
+//        setTitle(mPlanetTitles[position]);
+//        mDrawerLayout.closeDrawer(mDrawerList);
     }
 
     @Override

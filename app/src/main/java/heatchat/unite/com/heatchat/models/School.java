@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.navDrawer;
+package heatchat.unite.com.heatchat.models;
 
 import com.google.firebase.database.IgnoreExtraProperties;
 

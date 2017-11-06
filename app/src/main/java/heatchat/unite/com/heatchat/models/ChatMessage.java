@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat;
+package heatchat.unite.com.heatchat.models;
 
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;

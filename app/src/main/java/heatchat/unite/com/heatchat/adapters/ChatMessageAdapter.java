@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat;
+package heatchat.unite.com.heatchat.adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -14,6 +14,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+
+import heatchat.unite.com.heatchat.models.ChatMessage;
+import heatchat.unite.com.heatchat.R;
 
 /**
  * Created by jaybell on 02/11/17.
