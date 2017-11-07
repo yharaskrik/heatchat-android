@@ -57,10 +57,12 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
     private ChatMessageAdapter messageAdapter;
+    private ChildEventListener messageListener;
     private SchoolListAdapter schoolListAdapter;
     private DatabaseReference mDatabase;
     private int requestCode = 0;
-    LinearLayoutManager llm;
+    private LinearLayoutManager llm = new LinearLayoutManager(this);
+    private LinearLayoutManager llmSchools = new LinearLayoutManager(this);
 
     @BindView(R.id.my_toolbar) Toolbar toolbar;
     @BindView(R.id.edittext_chatbox) EditText input;
@@ -94,35 +96,13 @@ public class MainActivity extends AppCompatActivity {
 
         initializeDrawer();
 
-        llm = new LinearLayoutManager(this);
         dataset = new ArrayList<>();
         messageAdapter = new ChatMessageAdapter(dataset);
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(this.messageAdapter);
         recyclerView.setLayoutManager(llm);
 
-        this.mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
-
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
-            this.requestCode++;
-        } else {
-
-            LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
-                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                    .setNumUpdates(5)
-                    .setInterval(100);
-
-            ReactiveLocationProvider locationProvider = new ReactiveLocationProvider(this);
-            Disposable subscription = locationProvider.getUpdatedLocation(request)
-                    .subscribe(location -> {
-                        this.longitude = location.getLongitude();
-                        this.latitude = location.getLatitude();
-                    });
-
-
-        }
+        checkAndSetLocationPermissions();
 
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             // Start sign in/sign up activity
@@ -168,9 +148,29 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void displayChatMessages() {
+    private void checkAndSetLocationPermissions() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-        ChildEventListener messageListener = new ChildEventListener() {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
+            this.requestCode++;
+        } else {
+
+            LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
+                    .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                    .setNumUpdates(5)
+                    .setInterval(100);
+
+            ReactiveLocationProvider locationProvider = new ReactiveLocationProvider(this);
+            Disposable subscription = locationProvider.getUpdatedLocation(request)
+                    .subscribe(location -> {
+                        this.longitude = location.getLongitude();
+                        this.latitude = location.getLatitude();
+                    });
+        }
+    }
+
+    private ChildEventListener initializeMessageListener() {
+        messageListener = new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
                 ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
@@ -197,7 +197,22 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        mDatabase.child("messages").addChildEventListener(messageListener);
+        return messageListener;
+    }
+
+    private void displayChatMessages() {
+        if (schools.size() > 0)
+            mDatabase.child(schools.get(0).getPath() + "/messages")
+                    .addChildEventListener(initializeMessageListener());
+        else
+            mDatabase.child("ubco").child("messages")
+                    .addChildEventListener(initializeMessageListener());
+    }
+
+    private void changeSchool() {
+        mDatabase.removeEventListener(messageListener);
+
+        displayChatMessages();
     }
 
     private void setEditingEnabled(boolean enabled) {
@@ -215,12 +230,19 @@ public class MainActivity extends AppCompatActivity {
             ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
             Map<String, Object> postValues = message.toMap();
 
-            String key = mDatabase.child("messages").push().getKey();
+            String key = mDatabase.child("ubco/messages").push().getKey();
 
             Map<String, Object> childUpdates = new HashMap<>();
-            childUpdates.put("/messages/" + key, postValues);
+            childUpdates.put("ubco/messages/" + key, postValues);
 
             mDatabase.updateChildren(childUpdates);
+
+//            School school = new School("UBC Vancouver", 49.261725, -123.241273, "ubcv");
+//            postValues = school.toMap();
+//            key = mDatabase.child("schools").push().getKey();
+//            childUpdates = new HashMap<>();
+//            childUpdates.put("/schools/" + key, postValues);
+//            mDatabase.updateChildren(childUpdates);
         }
     }
 
@@ -279,10 +301,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void initializeDrawer() {
 
-        // Set the messageAdapter for the list view
-        schools = new ArrayList<>();
-        schoolListAdapter = new SchoolListAdapter(schools);
-
         // Set the list's click listener
         mDrawerToggle = new ActionBarDrawerToggle(
                 this,
@@ -296,11 +314,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void displaySchools() {
+
+        schools = new ArrayList<>();
+        schoolListAdapter = new SchoolListAdapter(schools);
+        schoolsRecyclerView.setHasFixedSize(true);
+        schoolsRecyclerView.setAdapter(this.schoolListAdapter);
+        schoolsRecyclerView.setLayoutManager(llmSchools);
+
         ChildEventListener schoolListener = new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 School school = dataSnapshot.getValue(School.class);
-
                 schools.add(school);
                 schoolListAdapter.notifyDataSetChanged();
             }
