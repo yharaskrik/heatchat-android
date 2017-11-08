@@ -19,6 +19,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -40,6 +41,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.reactivestreams.Subscription;
 
@@ -57,7 +59,7 @@ import heatchat.unite.com.heatchat.adapters.SchoolListAdapter;
 import io.reactivex.disposables.Disposable;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private FirebaseAnalytics mFirebaseAnaltyics;
     private FirebaseAuth mAuth;
@@ -70,12 +72,12 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayoutManager llm = new LinearLayoutManager(this);
     private LinearLayoutManager llmSchools = new LinearLayoutManager(this);
 
-    @BindView(R.id.my_toolbar) Toolbar toolbar;
+    @BindView(R.id.toolbar) Toolbar toolbar;
     @BindView(R.id.edittext_chatbox) EditText input;
     @BindView(R.id.button_chatbox_send) Button mSubmitButton;
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.list_of_messages) RecyclerView recyclerView;
-    @BindView(R.id.schools_list) RecyclerView schoolsRecyclerView;
+//    @BindView(R.id.schools_list) RecyclerView schoolsRecyclerView;
     @BindView(R.id.navigation) NavigationView navDrawer;
 
     private CharSequence mTitle;
@@ -108,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(this.messageAdapter);
         recyclerView.setLayoutManager(llm);
+        ((LinearLayoutManager)recyclerView.getLayoutManager()).setStackFromEnd(true);
 
         checkAndSetLocationPermissions();
 
@@ -302,57 +305,60 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
 
-        displaySchools();
+//        displayChatMessages(selectedSchool);
+
+//        displaySchools();
+
     }
 
     private void initializeDrawer() {
 
-        // Set the list's click listener
-        mDrawerToggle = new ActionBarDrawerToggle(
-                this,
-                mDrawerLayout,
-                toolbar,
-                R.string.drawer_open,
-                R.string.drawer_close);
-        mDrawerLayout.addDrawerListener(mDrawerToggle);
-
-        schools = new ArrayList<>();
-        schoolListAdapter = new SchoolListAdapter(schools);
-        schoolsRecyclerView.setHasFixedSize(true);
-        schoolsRecyclerView.setAdapter(this.schoolListAdapter);
-        schoolsRecyclerView.setLayoutManager(llmSchools);
-
-        final GestureDetector mGestureDetector = new GestureDetector(MainActivity.this, new GestureDetector.SimpleOnGestureListener() {
-
-            @Override public boolean onSingleTapUp(MotionEvent e) {
-                return true;
-            }
-        });
-
-        schoolsRecyclerView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
-            @Override
-            public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
-                View child = recyclerView.findChildViewUnder(e.getX(),e.getY());
-                int position = recyclerView.getChildAdapterPosition(child);
-                if (position < schools.size() && position >= 0) {
-                    Log.d("position", Integer.toString(position));
-                    School school = schools.get(position);
-                    changeSchool(school);
-                    mDrawerLayout.closeDrawers();
-                }
-                return false;
-            }
-
-            @Override
-            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
-
-            }
-
-            @Override
-            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
-
-            }
-        });
+//        // Set the list's click listener
+//        mDrawerToggle = new ActionBarDrawerToggle(
+//                this,
+//                mDrawerLayout,
+//                toolbar,
+//                R.string.drawer_open,
+//                R.string.drawer_close);
+//        mDrawerLayout.addDrawerListener(mDrawerToggle);
+//
+//        schools = new ArrayList<>();
+//        schoolListAdapter = new SchoolListAdapter(schools);
+//        schoolsRecyclerView.setHasFixedSize(true);
+//        schoolsRecyclerView.setAdapter(this.schoolListAdapter);
+//        schoolsRecyclerView.setLayoutManager(llmSchools);
+//
+//        final GestureDetector mGestureDetector = new GestureDetector(MainActivity.this, new GestureDetector.SimpleOnGestureListener() {
+//
+//            @Override public boolean onSingleTapUp(MotionEvent e) {
+//                return true;
+//            }
+//        });
+//
+//        schoolsRecyclerView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+//            @Override
+//            public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+//                View child = recyclerView.findChildViewUnder(e.getX(),e.getY());
+//                int position = recyclerView.getChildAdapterPosition(child);
+//                if (position < schools.size() && position >= 0) {
+//                    Log.d("position", Integer.toString(position));
+//                    School school = schools.get(position);
+//                    changeSchool(school);
+//                    mDrawerLayout.closeDrawers();
+//                }
+//                return false;
+//            }
+//
+//            @Override
+//            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+//
+//            }
+//
+//            @Override
+//            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+//
+//            }
+//        });
     }
 
     public static void onClickedMenu(int id){
@@ -368,7 +374,7 @@ public class MainActivity extends AppCompatActivity {
                 schools.add(school);
                 if (schools.size() == 1)
                     displayChatMessages(school);
-                schoolListAdapter.notifyDataSetChanged();
+//                schoolListAdapter.notifyDataSetChanged();
             }
 
             @Override
@@ -399,5 +405,67 @@ public class MainActivity extends AppCompatActivity {
     public void setTitle(CharSequence title) {
         mTitle = title;
         getActionBar().setTitle(mTitle);
+    }
+
+    private int count = 0;
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        count = 0;
+        schools = new ArrayList<>();
+        getMenuInflater().inflate(R.menu.nav_menu, menu);
+
+        Log.d("MENU", "Inflating menu");
+
+        ChildEventListener childEventListener = new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                School school = dataSnapshot.getValue(School.class);
+                schools.add(school);
+                menu.add(0, count, count, school.getName());
+                count++;
+
+                if (count == 1) {
+                    selectedSchool = school;
+                    displayChatMessages(school);
+                }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        };
+        mDatabase.child("schools").addChildEventListener(childEventListener);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Log.d("Indexxyz:", Integer.toString(item.getItemId()));
+        selectedSchool = schools.get(item.getItemId());
+        changeSchool(selectedSchool);
+        return true;
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
+        Log.d("Indexxyz:", Integer.toString(item.getItemId()));
+        return true;
     }
 }

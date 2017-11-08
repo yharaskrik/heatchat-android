@@ -6,9 +6,14 @@
     android:layout_height="match_parent">
 
     <!-- Main View -->
-    <android.support.constraint.ConstraintLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
+        <android.support.design.widget.CoordinatorLayout
+            android:id="@+id/main_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
             <android.support.design.widget.AppBarLayout
                 android:id="@+id/appbar_layout"
@@ -32,17 +37,18 @@
             </android.support.design.widget.AppBarLayout>
 
 
-        <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/list_of_messages"
-            android:layout_width="385dp"
-            android:layout_height="501dp"
-            android:layout_marginTop="64dp"
-            app:layout_constraintBottom_toTopOf="@id/layout_chatbox"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/list_of_messages"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="64dp"
+                android:paddingBottom="10dp"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toTopOf="@id/layout_chatbox"/>
 
             <!-- A horizontal line between the chatbox and RecyclerView -->
             <View
@@ -90,7 +96,25 @@
                     android:textSize="14dp" />
             </LinearLayout>
 
-    </android.support.constraint.ConstraintLayout>
+        </android.support.design.widget.CoordinatorLayout>
+
+    </RelativeLayout>
+
+    <!-- Navigation Drawer -->
+    <!--<android.support.design.widget.NavigationView-->
+        <!--android:id="@+id/drawer_content"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_gravity="start"-->
+        <!--app:headerLayout="@layout/navigate_profile_header"-->
+        <!--app:menu="@menu/menu_navigation_view_main"/>-->
+
+    <!--<FrameLayout-->
+        <!--android:id="@+id/drawer_filters"-->
+        <!--style="@style/Widget.Design.NavigationView"-->
+        <!--android:layout_width="@dimen/navigation_drawer_width"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_gravity="end"/>-->
 
     <android.support.design.widget.NavigationView
         android:id="@+id/navigation"
@@ -98,9 +122,20 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/nav_drawer"
-        app:menu="@menu/nav_menu"
         tools:layout_editor_absoluteX="38dp"
         tools:layout_editor_absoluteY="8dp">
+
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/schools_list"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:background="#ffffff"
+            android:choiceMode="singleChoice"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="1dp"
+            android:layout_alignParentStart="true"/>
 
     </android.support.design.widget.NavigationView>
 
