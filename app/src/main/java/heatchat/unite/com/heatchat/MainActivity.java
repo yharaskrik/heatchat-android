@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -26,7 +27,10 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.LocationRequest;
@@ -79,6 +83,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @BindView(R.id.list_of_messages) RecyclerView recyclerView;
 //    @BindView(R.id.schools_list) RecyclerView schoolsRecyclerView;
     @BindView(R.id.navigation) NavigationView navDrawer;
+    @BindView(R.id.nav_options) RelativeLayout rl;
+    @BindView(R.id.school_layout) LinearLayout lL;
 
     private CharSequence mTitle;
     private CharSequence mDrawerTitle;
@@ -408,6 +414,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     private int count = 0;
+    RelativeLayout.LayoutParams params1 = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         count = 0;
@@ -422,12 +430,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 School school = dataSnapshot.getValue(School.class);
                 schools.add(school);
                 menu.add(0, count, count, school.getName());
-                count++;
 
-                if (count == 1) {
+                TextView tv = new TextView(MainActivity.this);
+                tv.setId(count);
+                tv.setText(school.getName());
+                tv.setTextColor(Color.BLACK);
+
+                tv.setOnClickListener(new TextView.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        selectedSchool = schools.get(v.getId());
+                        changeSchool(selectedSchool);
+                    }
+                });
+
+                if(count != 0)
+                    params1.addRule(RelativeLayout.BELOW, count-1);
+
+                lL.addView(tv);
+
+                if (count == 0) {
                     selectedSchool = school;
                     displayChatMessages(school);
                 }
+
+                count++;
             }
 
             @Override

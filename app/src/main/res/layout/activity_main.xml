@@ -25,7 +25,9 @@
                         android:id="@+id/toolbar"
                         android:layout_width="match_parent"
                         android:layout_height="?attr/actionBarSize"
-                        />
+                        android:elevation="0dp">
+
+                    </android.support.v7.widget.Toolbar>
 
                 </android.support.design.widget.CollapsingToolbarLayout>
 
@@ -99,8 +101,28 @@
         android:layout_gravity="start"
         app:headerLayout="@layout/nav_drawer"
         app:menu="@menu/nav_menu"
+
         tools:layout_editor_absoluteX="38dp"
         tools:layout_editor_absoluteY="8dp">
+
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/nav_options"
+            android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/school_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+                <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Schools"/>
+            </LinearLayout>
+
+        </RelativeLayout>
 
     </android.support.design.widget.NavigationView>
 
