@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -17,6 +18,9 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -36,6 +40,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+
+import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
     @BindView(R.id.list_of_messages) RecyclerView recyclerView;
     @BindView(R.id.schools_list) RecyclerView schoolsRecyclerView;
+    @BindView(R.id.navigation) NavigationView navDrawer;
 
     private CharSequence mTitle;
     private CharSequence mDrawerTitle;
@@ -80,15 +87,15 @@ public class MainActivity extends AppCompatActivity {
 
     private List<ChatMessage> dataset;
     private List<School> schools;
+    private School selectedSchool;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        ButterKnife.bind(this);
         setSupportActionBar(toolbar);
 
-        ButterKnife.bind(this);
 
         mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
         mAuth = FirebaseAuth.getInstance();
@@ -120,7 +127,6 @@ public class MainActivity extends AppCompatActivity {
                             .getDisplayName(),
                     Toast.LENGTH_LONG)
                     .show();
-            displayChatMessages();
         }
 
         mSubmitButton.setOnClickListener(new View.OnClickListener() {
@@ -154,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
             this.requestCode++;
         } else {
-
+            Log.d("XYZ", "Setting location disposable");
             LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                     .setNumUpdates(5)
@@ -163,9 +169,11 @@ public class MainActivity extends AppCompatActivity {
             ReactiveLocationProvider locationProvider = new ReactiveLocationProvider(this);
             Disposable subscription = locationProvider.getUpdatedLocation(request)
                     .subscribe(location -> {
+                        Log.d("LOCATION", location.toString());
                         this.longitude = location.getLongitude();
                         this.latitude = location.getLatitude();
                     });
+
         }
     }
 
@@ -200,19 +208,18 @@ public class MainActivity extends AppCompatActivity {
         return messageListener;
     }
 
-    private void displayChatMessages() {
-        if (schools.size() > 0)
-            mDatabase.child(schools.get(0).getPath() + "/messages")
-                    .addChildEventListener(initializeMessageListener());
-        else
-            mDatabase.child("ubco").child("messages")
-                    .addChildEventListener(initializeMessageListener());
+    private void displayChatMessages(School school) {
+        this.selectedSchool = school;
+        mDatabase.child(school.getPath()).child("messages")
+                .addChildEventListener(initializeMessageListener());
     }
 
-    private void changeSchool() {
-        mDatabase.removeEventListener(messageListener);
+    private void changeSchool(School school) {
+        dataset.clear();
+        messageAdapter.notifyDataSetChanged();
 
-        displayChatMessages();
+        mDatabase.removeEventListener(messageListener);
+        displayChatMessages(school);
     }
 
     private void setEditingEnabled(boolean enabled) {
@@ -230,10 +237,10 @@ public class MainActivity extends AppCompatActivity {
             ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
             Map<String, Object> postValues = message.toMap();
 
-            String key = mDatabase.child("ubco/messages").push().getKey();
+            String key = mDatabase.child(this.selectedSchool.getPath()).child("messages").push().getKey();
 
             Map<String, Object> childUpdates = new HashMap<>();
-            childUpdates.put("ubco/messages/" + key, postValues);
+            childUpdates.put(this.selectedSchool.getPath() + "/messages/" + key, postValues);
 
             mDatabase.updateChildren(childUpdates);
 
@@ -261,8 +268,6 @@ public class MainActivity extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             Log.d("AnonymouseAuth", "signInAnonymously:success");
                             mUser = mAuth.getCurrentUser();
-
-                            displayChatMessages();
                         } else {
                             AlertDialog.Builder builder;
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -297,6 +302,7 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
 
+        displaySchools();
     }
 
     private void initializeDrawer() {
@@ -310,22 +316,58 @@ public class MainActivity extends AppCompatActivity {
                 R.string.drawer_close);
         mDrawerLayout.addDrawerListener(mDrawerToggle);
 
-        displaySchools();
-    }
-
-    private void displaySchools() {
-
         schools = new ArrayList<>();
         schoolListAdapter = new SchoolListAdapter(schools);
         schoolsRecyclerView.setHasFixedSize(true);
         schoolsRecyclerView.setAdapter(this.schoolListAdapter);
         schoolsRecyclerView.setLayoutManager(llmSchools);
 
+        final GestureDetector mGestureDetector = new GestureDetector(MainActivity.this, new GestureDetector.SimpleOnGestureListener() {
+
+            @Override public boolean onSingleTapUp(MotionEvent e) {
+                return true;
+            }
+        });
+
+        schoolsRecyclerView.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+            @Override
+            public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+                View child = recyclerView.findChildViewUnder(e.getX(),e.getY());
+                int position = recyclerView.getChildAdapterPosition(child);
+                if (position < schools.size() && position >= 0) {
+                    Log.d("position", Integer.toString(position));
+                    School school = schools.get(position);
+                    changeSchool(school);
+                    mDrawerLayout.closeDrawers();
+                }
+                return false;
+            }
+
+            @Override
+            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+
+            }
+
+            @Override
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
+            }
+        });
+    }
+
+    public static void onClickedMenu(int id){
+        Log.d("Item Clicked", Integer.toString(id));
+    }
+
+    private void displaySchools() {
+
         ChildEventListener schoolListener = new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 School school = dataSnapshot.getValue(School.class);
                 schools.add(school);
+                if (schools.size() == 1)
+                    displayChatMessages(school);
                 schoolListAdapter.notifyDataSetChanged();
             }
 
@@ -351,24 +393,6 @@ public class MainActivity extends AppCompatActivity {
         };
 
         mDatabase.child("schools").addChildEventListener(schoolListener);
-    }
-
-    private class DrawerItemClickListener implements ListView.OnItemClickListener {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            selectItem(position);
-        }
-    }
-
-    /** Swaps fragments in the main content view */
-    private void selectItem(int position) {
-        // Create a new fragment and specify the planet to show based on position
-
-
-        // Highlight the selected item, update the title, and close the drawer
-//        mDrawerList.setItemChecked(position, true);
-//        setTitle(mPlanetTitles[position]);
-//        mDrawerLayout.closeDrawer(mDrawerList);
     }
 
     @Override

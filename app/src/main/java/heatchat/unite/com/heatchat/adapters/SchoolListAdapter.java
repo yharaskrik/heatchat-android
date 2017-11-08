@@ -2,13 +2,16 @@ package heatchat.unite.com.heatchat.adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
+import heatchat.unite.com.heatchat.MainActivity;
 import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.models.School;
 
@@ -43,7 +46,7 @@ public class SchoolListAdapter extends RecyclerView.Adapter {
     @Override
     public int getItemCount() { return schoolList.size(); }
 
-    public class SchoolHolder extends RecyclerView.ViewHolder {
+    public class SchoolHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public TextView name;
 
         SchoolHolder(View view) {
@@ -53,6 +56,11 @@ public class SchoolListAdapter extends RecyclerView.Adapter {
 
         void bind(School school) {
             this.name.setText(school.getName());
+        }
+
+        @Override
+        public void onClick(View v) {
+            MainActivity.onClickedMenu(getPosition());
         }
     }
 }
