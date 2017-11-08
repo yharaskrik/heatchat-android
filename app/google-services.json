@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "1048720965159",
+    "firebase_url": "https://heatchat-184021.firebaseio.com",
+    "project_id": "heatchat-184021",
+    "storage_bucket": "heatchat-184021.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1048720965159:android:88f32c3be8e24550",
+        "android_client_info": {
+          "package_name": "heatchat.unite.com.heatchat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1048720965159-0kks5rfuv5n739foattsohq9aum3r69k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "heatchat.unite.com.heatchat",
+            "certificate_hash": "aa3e13a45fee9bd8ac35ebed47bc7520830dfc05"
+          }
+        },
+        {
+          "client_id": "1048720965159-nu4ug9dlbp6pdmeetiug0897g9o81e74.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0udPFW3RLYCPZT8NmyoEKxKCMyr62ArM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1048720965159-nu4ug9dlbp6pdmeetiug0897g9o81e74.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1048720965159-jlc4ufdp4qoal6jqmvugh8272kj142tk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.bam.HeatChat"
+              }
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
