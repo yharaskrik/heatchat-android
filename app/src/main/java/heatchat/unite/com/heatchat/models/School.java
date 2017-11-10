@@ -1,5 +1,7 @@
 package heatchat.unite.com.heatchat.models;
 
+import android.support.annotation.NonNull;
+
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
 
@@ -11,7 +13,7 @@ import java.util.Map;
  */
 
 @IgnoreExtraProperties
-public class School {
+public class School implements Comparable<School> {
 
     private String name;
     private double lat, lon, distance;
@@ -75,5 +77,13 @@ public class School {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    @Override
+    public int compareTo(@NonNull School school) {
+        if (school.getDistance() > this.getDistance())
+            return 0;
+        else
+            return 1;
     }
 }

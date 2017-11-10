@@ -6,45 +6,51 @@
     android:layout_height="match_parent">
 
     <!-- Main View -->
-    <android.support.constraint.ConstraintLayout
+    <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-            <android.support.design.widget.AppBarLayout
-                android:id="@+id/appbar_layout"
+        <android.support.design.widget.AppBarLayout
+            android:id="@+id/appbar_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            >
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="?attr/actionBarSize"
+                android:layout_gravity="center"
+                android:elevation="0dp">
 
-                <android.support.design.widget.CollapsingToolbarLayout
-                    android:id="@+id/collapsingToolbarLayout"
-                    android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/textViewTitle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:layout_scrollFlags="scroll|enterAlways">
-
-                    <android.support.v7.widget.Toolbar
-                        android:id="@+id/toolbar"
-                        android:layout_width="match_parent"
-                        android:layout_height="?attr/actionBarSize"
-                        android:elevation="0dp">
-
-                    </android.support.v7.widget.Toolbar>
-
-                </android.support.design.widget.CollapsingToolbarLayout>
-
-            </android.support.design.widget.AppBarLayout>
+                    android:text="Heatchat"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginLeft="5dp"
+                    android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"/>
 
 
-        <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/list_of_messages"
-            android:layout_width="385dp"
-            android:layout_height="501dp"
-            android:layout_marginTop="64dp"
-            app:layout_constraintBottom_toTopOf="@id/layout_chatbox"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            </android.support.v7.widget.Toolbar>
+
+        </android.support.design.widget.AppBarLayout>
+
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/main_constaint"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_anchor="@id/toolbar">
+
+            <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/list_of_messages"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                app:layout_constraintBottom_toTopOf="@id/shadow_bar"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
             <!-- A horizontal line between the chatbox and RecyclerView -->
             <View
@@ -91,38 +97,27 @@
                     android:text="SEND"
                     android:textSize="14dp" />
             </LinearLayout>
+        </android.support.constraint.ConstraintLayout>
 
-    </android.support.constraint.ConstraintLayout>
+    </android.support.design.widget.CoordinatorLayout>
 
     <android.support.design.widget.NavigationView
         android:id="@+id/navigation"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        app:headerLayout="@layout/nav_drawer"
-        app:menu="@menu/nav_menu"
-
         tools:layout_editor_absoluteX="38dp"
         tools:layout_editor_absoluteY="8dp">
 
-        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/nav_options"
-            android:orientation="vertical">
-            <LinearLayout
-                android:id="@+id/school_layout"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
-                <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Schools"/>
-            </LinearLayout>
-
-        </RelativeLayout>
+        <ListView
+            android:id="@+id/left_drawer"
+            android:layout_width="240dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:choiceMode="singleChoice"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="0dp"
+            android:background="#111"/>
 
     </android.support.design.widget.NavigationView>
 

@@ -60,7 +60,6 @@ public class SchoolListAdapter extends RecyclerView.Adapter {
 
         @Override
         public void onClick(View v) {
-            MainActivity.onClickedMenu(getPosition());
         }
     }
 }
