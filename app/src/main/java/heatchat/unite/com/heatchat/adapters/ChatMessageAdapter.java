@@ -32,7 +32,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
 
     @Override
     public int getItemViewType(int position) {
-        ChatMessage message = (ChatMessage) chatMessages.get(position);
+        ChatMessage message = chatMessages.get(position);
 
         if (message.getUid().equals(FirebaseAuth.getInstance().getUid())) {
             return VIEW_TYPE_MESSAGE_SENT;
@@ -87,8 +87,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
         ChatMessageSendHolder(View view) {
             super(view);
             Log.d("Sent", "");
-            this.text = (TextView) view.findViewById(R.id.text_message_body);
-            this.time = (TextView) view.findViewById(R.id.text_message_time);
+            this.text = view.findViewById(R.id.text_message_body);
+            this.time = view.findViewById(R.id.text_message_time);
         }
 
         void bind(ChatMessage message) {
@@ -104,8 +104,8 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
         ChatMessageReceivedHolder(View view) {
             super(view);
             Log.d("Received", "");
-            this.text = (TextView) view.findViewById(R.id.text_message_body);
-            this.time = (TextView) view.findViewById(R.id.text_message_time);
+            this.text = view.findViewById(R.id.text_message_body);
+            this.time = view.findViewById(R.id.text_message_time);
         }
         void bind(ChatMessage message) {
             text.setText(message.getText());

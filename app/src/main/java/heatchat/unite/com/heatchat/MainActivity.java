@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -20,19 +19,13 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.MotionEvent;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.LocationRequest;
@@ -49,8 +42,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import org.reactivestreams.Subscription;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,7 +53,6 @@ import butterknife.ButterKnife;
 import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
-import heatchat.unite.com.heatchat.adapters.SchoolListAdapter;
 import io.reactivex.disposables.Disposable;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
@@ -73,25 +63,32 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseUser mUser;
     private ChatMessageAdapter messageAdapter;
     private ChildEventListener messageListener;
-    private SchoolListAdapter schoolListAdapter;
     private DatabaseReference mDatabase;
     private int requestCode = 0;
     private LinearLayoutManager llm = new LinearLayoutManager(this);
     private LinearLayoutManager llmSchools = new LinearLayoutManager(this);
 
-    @BindView(R.id.toolbar) Toolbar toolbar;
-    @BindView(R.id.edittext_chatbox) EditText input;
-    @BindView(R.id.button_chatbox_send) Button mSubmitButton;
-    @BindView(R.id.drawer_layout) DrawerLayout mDrawerLayout;
-    @BindView(R.id.left_drawer) ListView mDrawerList;
-    @BindView(R.id.list_of_messages) RecyclerView recyclerView;
-    @BindView(R.id.navigation) NavigationView navDrawer;
+    @BindView(R.id.toolbar)
+    Toolbar toolbar;
+    @BindView(R.id.edittext_chatbox)
+    EditText input;
+    @BindView(R.id.button_chatbox_send)
+    Button mSubmitButton;
+    @BindView(R.id.drawer_layout)
+    DrawerLayout mDrawerLayout;
+    @BindView(R.id.left_drawer)
+    ListView mDrawerList;
+    @BindView(R.id.list_of_messages)
+    RecyclerView recyclerView;
+    @BindView(R.id.navigation)
+    NavigationView navDrawer;
 
     private CharSequence mTitle;
     private ActionBarDrawerToggle mDrawerToggle;
 
-    private double latitude;
-    private double longitude;
+    private Double latitude;
+    private Double longitude;
+    private boolean isLocation = false;
 
     private List<ChatMessage> dataset;
     private List<School> schools;
@@ -124,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(this.messageAdapter);
         recyclerView.setLayoutManager(llm);
-        ((LinearLayoutManager)recyclerView.getLayoutManager()).setStackFromEnd(true);
+        ((LinearLayoutManager) recyclerView.getLayoutManager()).setStackFromEnd(true);
 
         checkAndSetLocationPermissions();
 
@@ -176,24 +173,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 schools.clear();
-                for (DataSnapshot child: dataSnapshot.getChildren()) {
-                    Log.d("Child", child.toString());
+                for (DataSnapshot child : dataSnapshot.getChildren()) {
                     School school = child.getValue(School.class);
-                    Log.d("School:", school.toString());
                     school.setDistance(distance(latitude,
                             school.getLat(),
                             longitude,
                             school.getLon(),
                             0.0,
                             0.0));
-                    Log.d("Start", schools.toString());
                     schools.add(school);
-                    Log.d("End", schools.toString());
                 }
 
                 Collections.sort(schools);
 
-                for (School school: schools) {
+                for (School school : schools) {
                     mItems.add(school.getName());
                 }
 
@@ -223,13 +216,22 @@ public class MainActivity extends AppCompatActivity {
                     }
                 };
 
+                mDrawerToggle.setDrawerIndicatorEnabled(false);
+                toolbar.setNavigationIcon(R.drawable.ic_menu_black_24px);
+                toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mDrawerLayout.openDrawer(Gravity.START);
+                    }
+                });
                 mDrawerLayout.addDrawerListener(mDrawerToggle);
 
                 changeSchool(schools.get(0));
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {}
+            public void onCancelled(DatabaseError databaseError) {
+            }
         });
     }
 
@@ -238,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             changeSchool(schools.get(position));
+            mDrawerLayout.closeDrawers();
         }
     }
 
@@ -279,8 +282,29 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("LOCATION", location.toString());
                         this.longitude = location.getLongitude();
                         this.latitude = location.getLatitude();
+                        checkSchoolLocation();
                     });
         }
+    }
+
+    private boolean checkSchoolLocation() {
+        if (selectedSchool != null && longitude != null && latitude != null) {
+            if (distance(selectedSchool.getLat(),
+                    latitude,
+                    selectedSchool.getLon(),
+                    longitude,
+                    0.0,
+                    0.0) > 30000) {
+                setEditingEnabled(false);
+                return false;
+            }
+            else {
+                setEditingEnabled(true);
+                return true;
+            }
+        }
+        else
+            return false;
     }
 
     private ChildEventListener initializeMessageListener() {
@@ -293,15 +317,19 @@ public class MainActivity extends AppCompatActivity {
                 messageAdapter.notifyDataSetChanged();
                 recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
             }
+
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
             }
+
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
             }
+
             @Override
             public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
             }
+
             @Override
             public void onCancelled(DatabaseError databaseError) {
             }
@@ -323,29 +351,35 @@ public class MainActivity extends AppCompatActivity {
         if (messageListener != null)
             mDatabase.removeEventListener(messageListener);
         displayChatMessages(school);
+        checkSchoolLocation();
     }
 
     private void setEditingEnabled(boolean enabled) {
         input.setEnabled(enabled);
         if (enabled) {
+            input.setHint(R.string.close_hint);
             mSubmitButton.setVisibility(View.VISIBLE);
         } else {
+            input.setHint(R.string.not_close_hint);
             mSubmitButton.setVisibility(View.GONE);
         }
     }
 
     private void writeNewPost(String userId, String body) {
 
-        if (body.trim() != "") {
-            ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
-            Map<String, Object> postValues = message.toMap();
+        if (checkSchoolLocation()) {
+            if (body.trim() != "") {
+                body = body.trim();
+                ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
+                Map<String, Object> postValues = message.toMap();
 
-            String key = mDatabase.child(this.selectedSchool.getPath()).child("messages").push().getKey();
+                String key = mDatabase.child(this.selectedSchool.getPath()).child("messages").push().getKey();
 
-            Map<String, Object> childUpdates = new HashMap<>();
-            childUpdates.put(this.selectedSchool.getPath() + "/messages/" + key, postValues);
+                Map<String, Object> childUpdates = new HashMap<>();
+                childUpdates.put(this.selectedSchool.getPath() + "/messages/" + key, postValues);
 
-            mDatabase.updateChildren(childUpdates);
+                mDatabase.updateChildren(childUpdates);
+        }
 
 //            School school = new School("UBC Vancouver", 49.261725, -123.241273, "ubcv");
 //            postValues = school.toMap();

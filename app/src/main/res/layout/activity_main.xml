@@ -13,8 +13,8 @@
         <android.support.design.widget.AppBarLayout
             android:id="@+id/appbar_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            >
+            android:layout_height="wrap_content">
+
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
@@ -26,10 +26,10 @@
                     android:id="@+id/textViewTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Heatchat"
                     android:layout_centerHorizontal="true"
                     android:layout_marginLeft="5dp"
-                    android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"/>
+                    android:text="Heatchat"
+                    android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
 
 
             </android.support.v7.widget.Toolbar>
@@ -47,9 +47,8 @@
                 android:id="@+id/list_of_messages"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:paddingBottom="50dp"
                 android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                app:layout_constraintBottom_toTopOf="@id/shadow_bar"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
             <!-- A horizontal line between the chatbox and RecyclerView -->
@@ -114,10 +113,10 @@
             android:layout_width="240dp"
             android:layout_height="match_parent"
             android:layout_gravity="start"
+            android:background="#fff"
             android:choiceMode="singleChoice"
             android:divider="@android:color/transparent"
-            android:dividerHeight="0dp"
-            android:background="#111"/>
+            android:dividerHeight="0dp" />
 
     </android.support.design.widget.NavigationView>
 
