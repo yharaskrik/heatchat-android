@@ -143,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
                             .getDisplayName(),
                     Toast.LENGTH_LONG)
                     .show();
+            loadSchools();
         }
 
         mSubmitButton.setOnClickListener(new View.OnClickListener() {
@@ -168,6 +169,45 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeDrawer() {
+        mDrawerAdapter = new ArrayAdapter<String>(
+                MainActivity.this,
+                R.layout.drawer_list_item,
+                mItems);
+        mDrawerList.setAdapter(mDrawerAdapter);
+
+        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+
+        mDrawerToggle = new ActionBarDrawerToggle(
+                MainActivity.this,
+                mDrawerLayout,
+                R.string.drawer_open,
+                R.string.drawer_close) {
+
+            /** Called when a drawer has settled in a completely closed state. */
+            public void onDrawerClosed(View view) {
+                super.onDrawerClosed(view);
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+            }
+
+            /** Called when a drawer has settled in a completely open state. */
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+                invalidateOptionsMenu();
+            }
+        };
+
+        mDrawerToggle.setDrawerIndicatorEnabled(false);
+        toolbar.setNavigationIcon(R.drawable.ic_menu_black_24px);
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mDrawerLayout.openDrawer(Gravity.START);
+            }
+        });
+        mDrawerLayout.addDrawerListener(mDrawerToggle);
+    }
+
+    private void loadSchools() {
         mDatabase.child("schools").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -193,44 +233,7 @@ public class MainActivity extends AppCompatActivity {
                 for (School school : schools) {
                     mItems.add(school.getName());
                 }
-
-                mDrawerAdapter = new ArrayAdapter<String>(
-                        MainActivity.this,
-                        R.layout.drawer_list_item,
-                        mItems);
-                mDrawerList.setAdapter(mDrawerAdapter);
-
-                mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
-
-                mDrawerToggle = new ActionBarDrawerToggle(
-                        MainActivity.this,
-                        mDrawerLayout,
-                        R.string.drawer_open,
-                        R.string.drawer_close) {
-
-                    /** Called when a drawer has settled in a completely closed state. */
-                    public void onDrawerClosed(View view) {
-                        super.onDrawerClosed(view);
-                        invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
-                    }
-
-                    /** Called when a drawer has settled in a completely open state. */
-                    public void onDrawerOpened(View drawerView) {
-                        super.onDrawerOpened(drawerView);
-                        invalidateOptionsMenu();
-                    }
-                };
-
-                mDrawerToggle.setDrawerIndicatorEnabled(false);
-                toolbar.setNavigationIcon(R.drawable.ic_menu_black_24px);
-                toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        mDrawerLayout.openDrawer(Gravity.START);
-                    }
-                });
-                mDrawerLayout.addDrawerListener(mDrawerToggle);
-
+                mDrawerAdapter.notifyDataSetChanged();
                 changeSchool(schools.get(0));
             }
 
@@ -425,6 +428,7 @@ public class MainActivity extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             Log.d("AnonymouseAuth", "signInAnonymously:success");
                             mUser = mAuth.getCurrentUser();
+                            loadSchools();
                         } else {
                             AlertDialog.Builder builder;
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
