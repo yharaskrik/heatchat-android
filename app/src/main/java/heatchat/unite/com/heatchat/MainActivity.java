@@ -244,7 +244,10 @@ public class MainActivity extends AppCompatActivity {
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            changeSchool(schools.get(position));
+            if (schools.get(position).getPath() != selectedSchool.getPath()) {
+                mDatabase.removeEventListener(messageListener);
+                changeSchool(schools.get(position));
+            }
             mDrawerLayout.closeDrawers();
         }
     }
@@ -364,7 +367,8 @@ public class MainActivity extends AppCompatActivity {
         dataset.clear();
         messageAdapter.notifyDataSetChanged();
         if (messageListener != null)
-            mDatabase.removeEventListener(messageListener);
+            mDatabase.child(selectedSchool.getPath()).child("messages")
+                    .removeEventListener(messageListener);
         displayChatMessages(school);
         checkSchoolLocation();
     }
