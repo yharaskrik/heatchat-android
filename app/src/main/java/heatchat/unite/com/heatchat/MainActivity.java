@@ -85,10 +85,12 @@ public class MainActivity extends AppCompatActivity {
 
     private CharSequence mTitle;
     private ActionBarDrawerToggle mDrawerToggle;
+    private ArrayAdapter mDrawerAdapter;
 
     private Double latitude;
     private Double longitude;
     private boolean isLocation = false;
+    private boolean isSorted = false;
 
     private List<ChatMessage> dataset;
     private List<School> schools;
@@ -147,9 +149,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString());
-
-                // Clear the input
-                input.setText("");
             }
         });
 
@@ -175,25 +174,31 @@ public class MainActivity extends AppCompatActivity {
                 schools.clear();
                 for (DataSnapshot child : dataSnapshot.getChildren()) {
                     School school = child.getValue(School.class);
-                    school.setDistance(distance(latitude,
-                            school.getLat(),
-                            longitude,
-                            school.getLon(),
-                            0.0,
-                            0.0));
+                    if(isLocation) {
+                        school.setDistance(distance(latitude,
+                                school.getLat(),
+                                longitude,
+                                school.getLon(),
+                                0.0,
+                                0.0));
+                    }
                     schools.add(school);
                 }
 
-                Collections.sort(schools);
+                if (isLocation) {
+                    isSorted = true;
+                    Collections.sort(schools);
+                }
 
                 for (School school : schools) {
                     mItems.add(school.getName());
                 }
 
-                mDrawerList.setAdapter(new ArrayAdapter<String>(
+                mDrawerAdapter = new ArrayAdapter<String>(
                         MainActivity.this,
                         R.layout.drawer_list_item,
-                        mItems));
+                        mItems);
+                mDrawerList.setAdapter(mDrawerAdapter);
 
                 mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
 
@@ -283,6 +288,16 @@ public class MainActivity extends AppCompatActivity {
                         this.longitude = location.getLongitude();
                         this.latitude = location.getLatitude();
                         checkSchoolLocation();
+                        if (!isSorted && schools.size() > 0) {
+                            Collections.sort(schools);
+                            mItems.clear();
+                            for (School school: schools)
+                                mItems.add(school.getName());
+                            if (mDrawerAdapter != null)
+                                mDrawerAdapter.notifyDataSetChanged();
+                        }
+                        isLocation = true;
+
                     });
         }
     }
@@ -366,10 +381,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void writeNewPost(String userId, String body) {
-
+        body = body.trim();
         if (checkSchoolLocation()) {
-            if (body.trim() != "") {
-                body = body.trim();
+            if (body != "" && !body.isEmpty()) {
                 ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
                 Map<String, Object> postValues = message.toMap();
 
@@ -379,7 +393,9 @@ public class MainActivity extends AppCompatActivity {
                 childUpdates.put(this.selectedSchool.getPath() + "/messages/" + key, postValues);
 
                 mDatabase.updateChildren(childUpdates);
-        }
+
+                input.setText("");
+            }
 
 //            School school = new School("UBC Vancouver", 49.261725, -123.241273, "ubcv");
 //            postValues = school.toMap();
