@@ -27,7 +27,7 @@ public class ChatMessage {
         this.lat = lat;
 
         // Initialize to current time
-        this.time = new Date().getTime() / 1000;
+        this.time = new Date().getTime();
     }
 
     public ChatMessage(String uid, String text, double lat, double lon, long time) {

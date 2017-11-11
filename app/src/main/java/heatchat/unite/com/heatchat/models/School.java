@@ -8,10 +8,6 @@ import com.google.firebase.database.IgnoreExtraProperties;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by jaybell on 05/11/17.
- */
-
 @IgnoreExtraProperties
 public class School implements Comparable<School> {
 

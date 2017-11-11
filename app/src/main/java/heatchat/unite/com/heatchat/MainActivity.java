@@ -1,7 +1,6 @@
 package heatchat.unite.com.heatchat;
 
 import android.Manifest;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -29,10 +28,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -58,16 +54,6 @@ import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
 public class MainActivity extends AppCompatActivity {
 
-    private FirebaseAnalytics mFirebaseAnaltyics;
-    private FirebaseAuth mAuth;
-    private FirebaseUser mUser;
-    private ChatMessageAdapter messageAdapter;
-    private ChildEventListener messageListener;
-    private DatabaseReference mDatabase;
-    private int requestCode = 0;
-    private LinearLayoutManager llm = new LinearLayoutManager(this);
-    private LinearLayoutManager llmSchools = new LinearLayoutManager(this);
-
     @BindView(R.id.toolbar)
     Toolbar toolbar;
     @BindView(R.id.edittext_chatbox)
@@ -82,7 +68,15 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     @BindView(R.id.navigation)
     NavigationView navDrawer;
-
+    private FirebaseAnalytics mFirebaseAnaltyics;
+    private FirebaseAuth mAuth;
+    private FirebaseUser mUser;
+    private ChatMessageAdapter messageAdapter;
+    private ChildEventListener messageListener;
+    private DatabaseReference mDatabase;
+    private int requestCode = 0;
+    private LinearLayoutManager llm = new LinearLayoutManager(this);
+    private LinearLayoutManager llmSchools = new LinearLayoutManager(this);
     private CharSequence mTitle;
     private ActionBarDrawerToggle mDrawerToggle;
     private ArrayAdapter mDrawerAdapter;
@@ -97,6 +91,26 @@ public class MainActivity extends AppCompatActivity {
     private School selectedSchool;
 
     private ArrayList<String> mItems;
+
+    public static double distance(double lat1, double lat2, double lon1,
+                                  double lon2, double el1, double el2) {
+
+        final int R = 6371; // Radius of the earth
+
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double distance = R * c * 1000; // convert to meters
+
+        double height = el1 - el2;
+
+        distance = Math.pow(distance, 2) + Math.pow(height, 2);
+
+        return Math.sqrt(distance);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,8 +127,8 @@ public class MainActivity extends AppCompatActivity {
         mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
         mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance().getReference();
-        mItems = new ArrayList<String>();
-        schools = new ArrayList<School>();
+        mItems = new ArrayList<>();
+        schools = new ArrayList<>();
 
         initializeDrawer();
 
@@ -146,30 +160,15 @@ public class MainActivity extends AppCompatActivity {
             loadSchools();
         }
 
-        mSubmitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString());
-            }
-        });
+        mSubmitButton.setOnClickListener(view -> writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString()));
 
-        input.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
-            }
-        });
+        input.setOnClickListener(v -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
 
-        input.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-            @Override
-            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
-            }
-        });
+        input.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
     }
 
     private void initializeDrawer() {
-        mDrawerAdapter = new ArrayAdapter<String>(
+        mDrawerAdapter = new ArrayAdapter<>(
                 MainActivity.this,
                 R.layout.drawer_list_item,
                 mItems);
@@ -198,12 +197,7 @@ public class MainActivity extends AppCompatActivity {
 
         mDrawerToggle.setDrawerIndicatorEnabled(false);
         toolbar.setNavigationIcon(R.drawable.ic_menu_black_24px);
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mDrawerLayout.openDrawer(Gravity.START);
-            }
-        });
+        toolbar.setNavigationOnClickListener(v -> mDrawerLayout.openDrawer(Gravity.START));
         mDrawerLayout.addDrawerListener(mDrawerToggle);
     }
 
@@ -214,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
                 schools.clear();
                 for (DataSnapshot child : dataSnapshot.getChildren()) {
                     School school = child.getValue(School.class);
-                    if(isLocation) {
+                    if (isLocation) {
                         school.setDistance(distance(latitude,
                                 school.getLat(),
                                 longitude,
@@ -243,38 +237,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /* The click listner for ListView in the navigation drawer */
-    private class DrawerItemClickListener implements ListView.OnItemClickListener {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            if (schools.get(position).getPath() != selectedSchool.getPath()) {
-                mDatabase.removeEventListener(messageListener);
-                changeSchool(schools.get(position));
-            }
-            mDrawerLayout.closeDrawers();
-        }
-    }
-
-    public static double distance(double lat1, double lat2, double lon1,
-                                  double lon2, double el1, double el2) {
-
-        final int R = 6371; // Radius of the earth
-
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        double distance = R * c * 1000; // convert to meters
-
-        double height = el1 - el2;
-
-        distance = Math.pow(distance, 2) + Math.pow(height, 2);
-
-        return Math.sqrt(distance);
-    }
-
     private void checkAndSetLocationPermissions() {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
@@ -297,7 +259,7 @@ public class MainActivity extends AppCompatActivity {
                         if (!isSorted && schools.size() > 0) {
                             Collections.sort(schools);
                             mItems.clear();
-                            for (School school: schools)
+                            for (School school : schools)
                                 mItems.add(school.getName());
                             if (mDrawerAdapter != null)
                                 mDrawerAdapter.notifyDataSetChanged();
@@ -318,13 +280,11 @@ public class MainActivity extends AppCompatActivity {
                     0.0) > 30000) {
                 setEditingEnabled(false);
                 return false;
-            }
-            else {
+            } else {
                 setEditingEnabled(true);
                 return true;
             }
-        }
-        else
+        } else
             return false;
     }
 
@@ -362,7 +322,10 @@ public class MainActivity extends AppCompatActivity {
     private void displayChatMessages(School school) {
         this.selectedSchool = school;
         Log.d("PATH", school.getPath());
-        mDatabase.child(school.getPath()).child("messages")
+        mDatabase
+                .child("schoolMessages")
+                .child(school.getPath())
+                .child("messages")
                 .addChildEventListener(initializeMessageListener());
     }
 
@@ -370,9 +333,13 @@ public class MainActivity extends AppCompatActivity {
         dataset.clear();
         messageAdapter.notifyDataSetChanged();
         if (messageListener != null)
-            mDatabase.child(selectedSchool.getPath()).child("messages")
+            mDatabase
+                    .child("schoolMessages")
+                    .child(selectedSchool.getPath())
+                    .child("messages")
                     .removeEventListener(messageListener);
         displayChatMessages(school);
+        toolbar.setTitle(school.getName());
         checkSchoolLocation();
     }
 
@@ -394,10 +361,13 @@ public class MainActivity extends AppCompatActivity {
                 ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
                 Map<String, Object> postValues = message.toMap();
 
-                String key = mDatabase.child(this.selectedSchool.getPath()).child("messages").push().getKey();
+                String key = mDatabase
+                        .child("schoolMessages")
+                        .child(this.selectedSchool.getPath())
+                        .child("messages").push().getKey();
 
                 Map<String, Object> childUpdates = new HashMap<>();
-                childUpdates.put(this.selectedSchool.getPath() + "/messages/" + key, postValues);
+                childUpdates.put("schoolMessages/" + this.selectedSchool.getPath() + "/messages/" + key, postValues);
 
                 mDatabase.updateChildren(childUpdates);
 
@@ -422,35 +392,26 @@ public class MainActivity extends AppCompatActivity {
 
     private void signInAnonymously() {
         mAuth.signInAnonymously()
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            Log.d("AnonymouseAuth", "signInAnonymously:success");
-                            mUser = mAuth.getCurrentUser();
-                            loadSchools();
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("AnonymouseAuth", "signInAnonymously:success");
+                        mUser = mAuth.getCurrentUser();
+                        loadSchools();
+                    } else {
+                        AlertDialog.Builder builder;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            builder = new AlertDialog.Builder(MainActivity.this, android.R.style.Theme_Material_Dialog_Alert);
                         } else {
-                            AlertDialog.Builder builder;
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                builder = new AlertDialog.Builder(MainActivity.this, android.R.style.Theme_Material_Dialog_Alert);
-                            } else {
-                                builder = new AlertDialog.Builder(MainActivity.this);
-                            }
-                            builder.setTitle("Authentication Failed")
-                                    .setMessage("Authentication to Heatchat servers failed. Press ok to try again.")
-                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            signInAnonymously();
-                                        }
-                                    })
-                                    .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            // do nothing
-                                        }
-                                    })
-                                    .setIcon(android.R.drawable.ic_dialog_alert)
-                                    .show();
+                            builder = new AlertDialog.Builder(MainActivity.this);
                         }
+                        builder.setTitle("Authentication Failed")
+                                .setMessage("Authentication to Heatchat servers failed. Press ok to try again.")
+                                .setPositiveButton(android.R.string.ok, (dialog, which) -> signInAnonymously())
+                                .setNegativeButton(android.R.string.no, (dialog, which) -> {
+                                    // do nothing
+                                })
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .show();
                     }
                 });
     }
@@ -462,5 +423,17 @@ public class MainActivity extends AppCompatActivity {
         mUser = mAuth.getCurrentUser();
 
         recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
+    }
+
+    /* The click listner for ListView in the navigation drawer */
+    private class DrawerItemClickListener implements ListView.OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            if (schools.get(position).getPath() != selectedSchool.getPath()) {
+                mDatabase.removeEventListener(messageListener);
+                changeSchool(schools.get(position));
+            }
+            mDrawerLayout.closeDrawers();
+        }
     }
 }

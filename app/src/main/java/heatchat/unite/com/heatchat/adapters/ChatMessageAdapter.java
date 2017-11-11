@@ -18,10 +18,6 @@ import java.util.List;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.R;
 
-/**
- * Created by jaybell on 02/11/17.
- */
-
 public class ChatMessageAdapter extends RecyclerView.Adapter {
 
     private List<ChatMessage> chatMessages;
