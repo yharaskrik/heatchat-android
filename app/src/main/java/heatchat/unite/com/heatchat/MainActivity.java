@@ -27,6 +27,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.firebase.ui.auth.User;
 import com.google.android.gms.location.LocationRequest;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
@@ -90,6 +91,8 @@ public class MainActivity extends AppCompatActivity {
     private List<School> schools;
     private School selectedSchool;
 
+    private boolean locationSent = false;
+
     private ArrayList<String> mItems;
 
     public static double distance(double lat1, double lat2, double lon1,
@@ -117,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+        this.locationSent = false;
 
         setSupportActionBar(toolbar);
 
@@ -165,6 +169,24 @@ public class MainActivity extends AppCompatActivity {
         input.setOnClickListener(v -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
 
         input.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
+    }
+
+    private void sendLocation() {
+        String key = mDatabase
+                .child("/user/locations/").push().getKey();
+
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("lat", this.latitude);
+        hashMap.put("lon", this.longitude);
+        hashMap.put("uid", mUser.getUid());
+
+        Map<String, Object> childUpdates = new HashMap<>();
+        childUpdates.put("/user/locations/" + key, hashMap);
+
+        mDatabase.updateChildren(childUpdates);
+
+        locationSent = true;
+        Log.d("Location", "Sent");
     }
 
     private void initializeDrawer() {
@@ -372,14 +394,13 @@ public class MainActivity extends AppCompatActivity {
                 mDatabase.updateChildren(childUpdates);
 
                 input.setText("");
-            }
 
-//            School school = new School("UBC Vancouver", 49.261725, -123.241273, "ubcv");
-//            postValues = school.toMap();
-//            key = mDatabase.child("schools").push().getKey();
-//            childUpdates = new HashMap<>();
-//            childUpdates.put("/schools/" + key, postValues);
-//            mDatabase.updateChildren(childUpdates);
+//                ArrayList<School> addSchools = new ArrayList<>();
+//                key = mDatabase.child("schools").push().getKey();
+//                childUpdates = new HashMap<>();
+//                childUpdates.put("/schools/" + key, postValues);
+//                mDatabase.updateChildren(childUpdates);
+            }
         }
     }
 
@@ -397,6 +418,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("AnonymouseAuth", "signInAnonymously:success");
                         mUser = mAuth.getCurrentUser();
                         loadSchools();
+                        sendLocation();
                     } else {
                         AlertDialog.Builder builder;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -419,9 +441,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-
-        mUser = mAuth.getCurrentUser();
-
         recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
     }
 
