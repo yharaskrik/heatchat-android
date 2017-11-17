@@ -83,6 +83,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
         ChatMessageSendHolder(View view) {
             super(view);
             Log.d("Sent", "");
+            view.setElevation(4);
             this.text = view.findViewById(R.id.text_message_body);
             this.time = view.findViewById(R.id.text_message_time);
         }
@@ -100,6 +101,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
         ChatMessageReceivedHolder(View view) {
             super(view);
             Log.d("Received", "");
+            view.setElevation(4);
             this.text = view.findViewById(R.id.text_message_body);
             this.time = view.findViewById(R.id.text_message_time);
         }

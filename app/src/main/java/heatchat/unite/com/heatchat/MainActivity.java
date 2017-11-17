@@ -3,9 +3,10 @@ package heatchat.unite.com.heatchat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -27,7 +28,6 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.firebase.ui.auth.User;
 import com.google.android.gms.location.LocationRequest;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
@@ -51,6 +51,7 @@ import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
 public class MainActivity extends AppCompatActivity {
@@ -81,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
     private CharSequence mTitle;
     private ActionBarDrawerToggle mDrawerToggle;
     private ArrayAdapter mDrawerAdapter;
+    private Disposable subscription;
+    private ReactiveLocationProvider locationProvider;
 
     private Double latitude;
     private Double longitude;
@@ -259,22 +262,38 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void checkAndSetLocationPermissions() {
+    private void getLocation() {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
             this.requestCode++;
         } else {
-            Log.d("XYZ", "Setting location disposable");
+            locationProvider.getLastKnownLocation()
+                    .subscribe(new Consumer<Location>() {
+                        @Override
+                        public void accept(Location location) {
+                            Log.d("Changing 1:", location.toString());
+                            longitude = location.getLongitude();
+                            latitude = location.getLatitude();
+                            checkSchoolLocation();
+                        }
+                    });
+        }
+    }
+
+    private void setLocationSubscription() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
+            this.requestCode++;
+        } else {
             LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                     .setNumUpdates(5)
                     .setInterval(100);
-
-            ReactiveLocationProvider locationProvider = new ReactiveLocationProvider(this);
-            Disposable subscription = locationProvider.getUpdatedLocation(request)
+            subscription = locationProvider.getUpdatedLocation(request)
                     .subscribe(location -> {
-                        Log.d("LOCATION", location.toString());
+                        Log.d("Changing 2:", location.toString());
                         this.longitude = location.getLongitude();
                         this.latitude = location.getLatitude();
                         checkSchoolLocation();
@@ -287,13 +306,34 @@ public class MainActivity extends AppCompatActivity {
                                 mDrawerAdapter.notifyDataSetChanged();
                         }
                         isLocation = true;
-
+                    }, throwable -> {
+                        Log.e("RXJAVA", "Throwable " + throwable.getMessage());
                     });
+        }
+    }
+
+    private void checkAndSetLocationPermissions() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
+            this.requestCode++;
+        } else {
+            Log.d("XYZ", "Setting location disposable");
+
+            locationProvider = new ReactiveLocationProvider(this);
+            getLocation();
+            setLocationSubscription();
         }
     }
 
     private boolean checkSchoolLocation() {
         if (selectedSchool != null && longitude != null && latitude != null) {
+            Log.d("Changing:", Double.toString(distance(selectedSchool.getLat(),
+                    latitude,
+                    selectedSchool.getLon(),
+                    longitude,
+                    0.0,
+                    0.0)));
             if (distance(selectedSchool.getLat(),
                     latitude,
                     selectedSchool.getLon(),
@@ -362,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
                     .removeEventListener(messageListener);
         displayChatMessages(school);
         toolbar.setTitle(school.getName());
+        toolbar.setTitleTextColor(Color.parseColor("#ffffff"));
         checkSchoolLocation();
     }
 
@@ -441,6 +482,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
+        getLocation();
         recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
     }
 

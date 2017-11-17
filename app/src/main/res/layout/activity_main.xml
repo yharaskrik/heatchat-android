@@ -20,7 +20,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:layout_gravity="center"
-                android:elevation="0dp">
+                android:elevation="0dp"
+                android:background="#6495ed">
 
                 <TextView
                     android:id="@+id/textViewTitle"
@@ -29,7 +30,8 @@
                     android:layout_centerHorizontal="true"
                     android:layout_marginLeft="5dp"
                     android:text="Heatchat"
-                    android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large" />
+                    android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"
+                    android:textColor="#FFFFFF"/>
 
 
             </android.support.v7.widget.Toolbar>
@@ -49,7 +51,7 @@
                 android:layout_height="match_parent"
                 android:paddingBottom="60dp"
                 android:paddingTop="10dp"
-                android:background="#EBEBEB"
+                android:background="#F4F8FF"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
             <!-- A horizontal line between the chatbox and RecyclerView -->
@@ -67,7 +69,7 @@
                 android:id="@+id/layout_chatbox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:background="#ffffff"
+                android:background="#F4F8FF"
                 android:minHeight="48dp"
                 android:orientation="horizontal"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -82,7 +84,8 @@
                     android:layout_marginLeft="16dp"
                     android:layout_marginRight="16dp"
                     android:layout_weight="1"
-                    android:background="@android:color/transparent"
+                    android:background="#F4F8FF"
+                    android:textColor="#555555"
                     android:hint="Enter message"
                     android:maxLines="6" />
 
@@ -107,17 +110,20 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         tools:layout_editor_absoluteX="38dp"
-        tools:layout_editor_absoluteY="8dp">
+        tools:layout_editor_absoluteY="8dp"
+        android:background="#FFFFFF">
 
         <ListView
             android:id="@+id/left_drawer"
-            android:layout_width="240dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="start"
-            android:background="#fff"
+            android:background="#FFFFFF"
             android:choiceMode="singleChoice"
             android:divider="@android:color/transparent"
-            android:dividerHeight="0dp" />
+            android:dividerHeight="0dp"
+            android:listSelector="#00000000"
+            android:drawSelectorOnTop="true"/>
 
     </android.support.design.widget.NavigationView>
 
