@@ -1,5 +1,10 @@
 package heatchat.unite.com.heatchat.models;
 
+import android.arch.persistence.room.ColumnInfo;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
+import android.support.annotation.NonNull;
+
 import com.google.firebase.database.Exclude;
 import com.google.firebase.database.IgnoreExtraProperties;
 
@@ -8,13 +13,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 @IgnoreExtraProperties
-public class ChatMessage {
+@Entity(tableName = "chatmessage")
+public class ChatMessage implements Comparable<ChatMessage> {
 
-    private String text;
+    @PrimaryKey
+    @NonNull
+    @ColumnInfo(name = "messageID")
+    private String messageID;
+
+    @ColumnInfo(name = "uid")
     private String uid;
+
+    @ColumnInfo(name = "text")
+    private String text;
+
+    @ColumnInfo(name = "time")
     private long time;
+
+    @ColumnInfo(name = "lat")
     private double lat;
+
+    @ColumnInfo(name = "lon")
     private double lon;
+
+    @ColumnInfo(name = "path")
+    private String path;
 
     public ChatMessage(){
 
@@ -25,6 +48,18 @@ public class ChatMessage {
         this.uid = uid;
         this.lon = lon;
         this.lat = lat;
+
+        // Initialize to current time
+        this.time = new Date().getTime();
+    }
+
+    public ChatMessage(String uid, String text, double lat, double lon, String path, String messageID) {
+        this.text = text;
+        this.uid = uid;
+        this.lon = lon;
+        this.lat = lat;
+        this.path = path;
+        this.messageID = messageID;
 
         // Initialize to current time
         this.time = new Date().getTime();
@@ -50,6 +85,22 @@ public class ChatMessage {
         return result;
     }
 
+    @Override
+    public int compareTo(ChatMessage message) {
+
+        return (int)(this.getTime() - message.getTime());
+
+    }
+
+    @NonNull
+    public String getMessageID() {
+        return messageID;
+    }
+
+    public void setMessageID(@NonNull String messageID) {
+        this.messageID = messageID;
+    }
+
     public String getText() {
         return text;
     }
@@ -60,6 +111,14 @@ public class ChatMessage {
 
     public String getUid() {
         return uid;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public void setUid(String uid) {
