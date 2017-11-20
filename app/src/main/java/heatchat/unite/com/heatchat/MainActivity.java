@@ -9,7 +9,6 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -43,7 +42,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -53,9 +51,9 @@ import java.util.concurrent.ExecutionException;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
-import heatchat.unite.com.heatchat.dao.ChatMessageDao;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
+import heatchat.unite.com.heatchat.query.MessagesQuery;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
@@ -90,12 +88,13 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter mDrawerAdapter;
     private Disposable subscription;
     private ReactiveLocationProvider locationProvider;
-    private static AppDatabase db;
+    private MessagesQuery messagesQuery;
 
     private Double latitude;
     private Double longitude;
     private boolean isLocation = false;
     private boolean isSorted = false;
+    private static int maxMessages = 100;
 
     private List<ChatMessage> dataset;
     private List<School> schools;
@@ -132,8 +131,7 @@ public class MainActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         this.locationSent = false;
 
-        this.db = Room.databaseBuilder(getApplicationContext(),
-                AppDatabase.class, "heatchat-message-db").fallbackToDestructiveMigration().build();
+        messagesQuery = new MessagesQuery(MainActivity.this);
 
         setSupportActionBar(toolbar);
 
@@ -182,6 +180,8 @@ public class MainActivity extends AppCompatActivity {
         input.setOnClickListener(v -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
 
         input.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
+
+        setEditingEnabled(false);
     }
 
     private void sendLocation() {
@@ -278,6 +278,9 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
             this.requestCode++;
         } else {
+            if (locationProvider == null) {
+                locationProvider = new ReactiveLocationProvider(this);
+            }
             locationProvider.getLastKnownLocation()
                     .subscribe(new Consumer<Location>() {
                         @Override
@@ -292,11 +295,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setLocationSubscription() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    this.requestCode);
+            setEditingEnabled(false);
             this.requestCode++;
         } else {
+            setEditingEnabled(true);
             LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                     .setNumUpdates(5)
@@ -367,8 +375,12 @@ public class MainActivity extends AppCompatActivity {
                 ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
                 cm.setMessageID(dataSnapshot.getKey());
                 cm.setPath(selectedSchool.getPath());
-                new SaveMessageTask().execute(cm);
+                messagesQuery.saveMessage(cm);
+                Log.d("Dataset Size", Integer.toString(dataset.size()));
+                if (dataset.size() >= maxMessages)
+                    dataset = dataset.subList(1, maxMessages);
                 dataset.add(cm);
+                Log.d("Dataset Size", Integer.toString(dataset.size()));
                 messageAdapter.notifyDataSetChanged();
                 recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
             }
@@ -393,49 +405,31 @@ public class MainActivity extends AppCompatActivity {
         return messageListener;
     }
 
-    private static class GetMessagesTask extends AsyncTask<School, Void, List<ChatMessage>> {
-        @Override
-        protected List<ChatMessage> doInBackground(School... schools) {
-            Log.d("NUMBER OF RETURNS", Integer.toString(db.chatMessageDao().loadMessagesByPath(schools[0].getPath()).size()));
-            return db.chatMessageDao().loadMessagesByPath(schools[0].getPath());
-        }
-    }
-    private static class SaveMessageTask extends AsyncTask<ChatMessage, Void, Integer> {
-        @Override
-        protected Integer doInBackground(ChatMessage... messages) {
-            db.chatMessageDao().insertAll(messages);
-            return 1;
-        }
-    }
-
     private void displayChatMessages(School school) {
         this.selectedSchool = school;
         Log.d("PATH", school.getPath());
 
-        try {
-            dataset.addAll(new GetMessagesTask().execute(this.selectedSchool).get());
-            Collections.sort(dataset);
+        dataset.addAll(messagesQuery.getMessages(school));
+        Collections.sort(dataset);
 
-            if (dataset.size() == 0)
-                mDatabase
-                        .child("schoolMessages")
-                        .child(school.getPath())
-                        .child("messages")
-                        .addChildEventListener(initializeMessageListener());
-            else {
-                mDatabase
-                        .child("schoolMessages")
-                        .child(school.getPath())
-                        .child("messages")
-                        .orderByChild("time")
-                        .startAt(dataset.get(dataset.size() - 1).getTime())
-                        .addChildEventListener(initializeMessageListener());
+        if (dataset.size() == 0)
+            mDatabase
+                    .child("schoolMessages")
+                    .child(school.getPath())
+                    .child("messages")
+                    .addChildEventListener(initializeMessageListener());
+        else {
+            mDatabase
+                    .child("schoolMessages")
+                    .child(school.getPath())
+                    .child("messages")
+                    .orderByChild("time")
+                    .startAt(dataset.get(dataset.size() - 1).getTime())
+                    .addChildEventListener(initializeMessageListener());
 
-                messageAdapter.notifyDataSetChanged();
-            }
+            messageAdapter.notifyDataSetChanged();
         }
-        catch (ExecutionException e) {}
-        catch (InterruptedException e) {}
+
 
         Log.d("PATH", Integer.toString(dataset.size()));
     }
@@ -452,7 +446,8 @@ public class MainActivity extends AppCompatActivity {
         displayChatMessages(school);
         toolbar.setTitle(school.getName());
         toolbar.setTitleTextColor(Color.parseColor("#ffffff"));
-        checkSchoolLocation();
+        getLocation();
+//        checkSchoolLocation();
     }
 
     private void setEditingEnabled(boolean enabled) {
