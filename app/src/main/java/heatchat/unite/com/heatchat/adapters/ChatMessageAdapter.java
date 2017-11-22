@@ -10,21 +10,24 @@ import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
 
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.R;
+import heatchat.unite.com.heatchat.models.ChatMessage;
 
 public class ChatMessageAdapter extends RecyclerView.Adapter {
 
+    private static final int VIEW_TYPE_MESSAGE_SENT = 1;
+    private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
     private List<ChatMessage> chatMessages;
     private Context mContext;
 
-    private static final int VIEW_TYPE_MESSAGE_SENT = 1;
-    private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
+    public ChatMessageAdapter(List<ChatMessage> messageList) {
+//        this.mContext = context;
+        this.chatMessages = messageList;
+    }
 
     @Override
     public int getItemViewType(int position) {
@@ -37,11 +40,6 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
         }
     }
 
-    public ChatMessageAdapter(List<ChatMessage> messageList) {
-//        this.mContext = context;
-        this.chatMessages = messageList;
-    }
-
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view;
@@ -50,8 +48,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.sent_message, parent, false);
             return new ChatMessageSendHolder(view);
-        }
-        else if (viewType == VIEW_TYPE_MESSAGE_RECEIVED) {
+        } else if (viewType == VIEW_TYPE_MESSAGE_RECEIVED) {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.received_message, parent, false);
             return new ChatMessageReceivedHolder(view);
@@ -105,6 +102,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
             this.text = view.findViewById(R.id.text_message_body);
             this.time = view.findViewById(R.id.text_message_time);
         }
+
         void bind(ChatMessage message) {
             text.setText(message.getText());
             time.setText(new SimpleDateFormat("HH:mm")

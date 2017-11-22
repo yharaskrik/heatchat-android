@@ -29,11 +29,9 @@ public class MessagesQuery {
     public List<ChatMessage> getMessages(School school) {
         try {
             return (new GetMessagesTask().execute(school).get());
-        }
-        catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             return new ArrayList<>();
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             return new ArrayList<>();
         }
     }
@@ -42,7 +40,10 @@ public class MessagesQuery {
         @Override
         protected List<ChatMessage> doInBackground(School... schools) {
             List<ChatMessage> messages = db.chatMessageDao().loadMessagesByPath(schools[0].getPath());
-            return messages.subList(messages.size() - maxMessages + 1, messages.size() - 1);
+            if (messages.size() > 100)
+                return messages.subList(messages.size() - maxMessages + 1, messages.size() - 1);
+            else
+                return messages;
         }
     }
 

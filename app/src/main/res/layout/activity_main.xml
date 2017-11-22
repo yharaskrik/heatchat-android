@@ -20,8 +20,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 android:layout_gravity="center"
-                android:elevation="0dp"
-                android:background="#6495ed">
+                android:background="#6495ed"
+                android:elevation="0dp">
 
                 <TextView
                     android:id="@+id/textViewTitle"
@@ -31,7 +31,7 @@
                     android:layout_marginLeft="5dp"
                     android:text="Heatchat"
                     android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"
-                    android:textColor="#FFFFFF"/>
+                    android:textColor="#FFFFFF" />
 
 
             </android.support.v7.widget.Toolbar>
@@ -49,10 +49,10 @@
                 android:id="@+id/list_of_messages"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:background="#F4F8FF"
                 android:paddingBottom="60dp"
                 android:paddingTop="10dp"
-                android:background="#F4F8FF"
-                app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+                app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
             <!-- A horizontal line between the chatbox and RecyclerView -->
             <View
@@ -85,9 +85,9 @@
                     android:layout_marginRight="16dp"
                     android:layout_weight="1"
                     android:background="#F4F8FF"
-                    android:textColor="#555555"
                     android:hint="Enter message"
-                    android:maxLines="6" />
+                    android:maxLines="6"
+                    android:textColor="#555555" />
 
                 <Button
                     android:id="@+id/button_chatbox_send"
@@ -109,9 +109,9 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
+        android:background="#FFFFFF"
         tools:layout_editor_absoluteX="38dp"
-        tools:layout_editor_absoluteY="8dp"
-        android:background="#FFFFFF">
+        tools:layout_editor_absoluteY="8dp">
 
         <ListView
             android:id="@+id/left_drawer"
@@ -122,8 +122,8 @@
             android:choiceMode="singleChoice"
             android:divider="@android:color/transparent"
             android:dividerHeight="0dp"
-            android:listSelector="#00000000"
-            android:drawSelectorOnTop="true"/>
+            android:drawSelectorOnTop="true"
+            android:listSelector="#00000000" />
 
     </android.support.design.widget.NavigationView>
 

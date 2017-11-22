@@ -39,7 +39,7 @@ public class ChatMessage implements Comparable<ChatMessage> {
     @ColumnInfo(name = "path")
     private String path;
 
-    public ChatMessage(){
+    public ChatMessage() {
 
     }
 
@@ -88,7 +88,7 @@ public class ChatMessage implements Comparable<ChatMessage> {
     @Override
     public int compareTo(ChatMessage message) {
 
-        return (int)(this.getTime() - message.getTime());
+        return (int) (this.getTime() - message.getTime());
 
     }
 
@@ -113,16 +113,16 @@ public class ChatMessage implements Comparable<ChatMessage> {
         return uid;
     }
 
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
     public String getPath() {
         return path;
     }
 
     public void setPath(String path) {
         this.path = path;
-    }
-
-    public void setUid(String uid) {
-        this.uid = uid;
     }
 
     public long getTime() {

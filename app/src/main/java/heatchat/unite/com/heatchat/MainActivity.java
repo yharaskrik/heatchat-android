@@ -1,12 +1,10 @@
 package heatchat.unite.com.heatchat;
 
 import android.Manifest;
-import android.arch.persistence.room.Room;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
@@ -46,7 +44,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -60,6 +57,8 @@ import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final int ACCESS_FINE_LOCATION_CODE = 104;
+    private static int maxMessages = 100;
     @BindView(R.id.toolbar)
     Toolbar toolbar;
     @BindView(R.id.edittext_chatbox)
@@ -89,17 +88,13 @@ public class MainActivity extends AppCompatActivity {
     private Disposable subscription;
     private ReactiveLocationProvider locationProvider;
     private MessagesQuery messagesQuery;
-
     private Double latitude;
     private Double longitude;
     private boolean isLocation = false;
     private boolean isSorted = false;
-    private static int maxMessages = 100;
-
     private List<ChatMessage> dataset;
     private List<School> schools;
     private School selectedSchool;
-
     private boolean locationSent = false;
 
     private ArrayList<String> mItems;
@@ -275,8 +270,7 @@ public class MainActivity extends AppCompatActivity {
     private void getLocation() {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
-            this.requestCode++;
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, ACCESS_FINE_LOCATION_CODE);
         } else {
             if (locationProvider == null) {
                 locationProvider = new ReactiveLocationProvider(this);
@@ -291,6 +285,7 @@ public class MainActivity extends AppCompatActivity {
                             checkSchoolLocation();
                         }
                     });
+            checkSchoolLocation();
         }
     }
 
@@ -300,9 +295,8 @@ public class MainActivity extends AppCompatActivity {
 
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    this.requestCode);
+                    ACCESS_FINE_LOCATION_CODE);
             setEditingEnabled(false);
-            this.requestCode++;
         } else {
             setEditingEnabled(true);
             LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
@@ -330,10 +324,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        Log.d("PERMISSION GRANTED", Integer.toString(requestCode));
+        Log.d("PERMISSION GRANTED", Integer.toString(ACCESS_FINE_LOCATION_CODE));
+        switch (requestCode) {
+            case ACCESS_FINE_LOCATION_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    getLocation();
+                } else {
+                    setEditingEnabled(false);
+                }
+            }
+        }
+    }
+
     private void checkAndSetLocationPermissions() {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, this.requestCode);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, ACCESS_FINE_LOCATION_CODE);
             this.requestCode++;
         } else {
             Log.d("XYZ", "Setting location disposable");
@@ -447,7 +459,6 @@ public class MainActivity extends AppCompatActivity {
         toolbar.setTitle(school.getName());
         toolbar.setTitleTextColor(Color.parseColor("#ffffff"));
         getLocation();
-//        checkSchoolLocation();
     }
 
     private void setEditingEnabled(boolean enabled) {

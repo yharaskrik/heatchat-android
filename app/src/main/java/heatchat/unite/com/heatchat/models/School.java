@@ -15,7 +15,8 @@ public class School implements Comparable<School> {
     private double lat, lon, distance;
     private String path;
 
-    public School() {}
+    public School() {
+    }
 
     public School(String name, double lat, double lon, String path) {
         this.name = name;
