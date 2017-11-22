@@ -29,7 +29,6 @@
                     android:layout_height="wrap_content"
                     android:layout_centerHorizontal="true"
                     android:layout_marginLeft="5dp"
-                    android:text="Heatchat"
                     android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"
                     android:textColor="#FFFFFF" />
 

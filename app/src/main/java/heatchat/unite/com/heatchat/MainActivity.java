@@ -26,6 +26,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.LocationRequest;
@@ -59,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int ACCESS_FINE_LOCATION_CODE = 104;
     private static int maxMessages = 100;
+    @BindView(R.id.textViewTitle)
+    TextView toolbarTitle;
     @BindView(R.id.toolbar)
     Toolbar toolbar;
     @BindView(R.id.edittext_chatbox)
@@ -456,7 +459,8 @@ public class MainActivity extends AppCompatActivity {
                     .child("messages")
                     .removeEventListener(messageListener);
         displayChatMessages(school);
-        toolbar.setTitle(school.getName());
+        toolbar.setTitle(school.getName() + " Heatchat");
+//        toolbarTitle.setText(school.getName() + " Heatchat");
         toolbar.setTitleTextColor(Color.parseColor("#ffffff"));
         getLocation();
     }
