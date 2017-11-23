@@ -53,6 +53,16 @@
                 android:paddingTop="10dp"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
+            <TextView
+                android:id="@+id/empty_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:visibility="gone"
+                android:textColor="#555555"
+                android:textSize="14dp"
+                android:text="@string/no_data_available" />
+
             <!-- A horizontal line between the chatbox and RecyclerView -->
             <View
                 android:id="@+id/shadow_bar"

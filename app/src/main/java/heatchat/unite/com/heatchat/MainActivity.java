@@ -76,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     @BindView(R.id.navigation)
     NavigationView navDrawer;
+    @BindView(R.id.empty_view)
+    TextView emptyView;
     private FirebaseAnalytics mFirebaseAnaltyics;
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
@@ -398,6 +400,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("Dataset Size", Integer.toString(dataset.size()));
                 messageAdapter.notifyDataSetChanged();
                 recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
+
+                if (recyclerView.getVisibility() == View.GONE) {
+                    recyclerView.setVisibility(View.VISIBLE);
+                    emptyView.setVisibility(View.GONE);
+                }
             }
 
             @Override
@@ -443,6 +450,14 @@ public class MainActivity extends AppCompatActivity {
                     .addChildEventListener(initializeMessageListener());
 
             messageAdapter.notifyDataSetChanged();
+        }
+
+        if (dataset.isEmpty()) {
+            recyclerView.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+            emptyView.setVisibility(View.GONE);
         }
 
 

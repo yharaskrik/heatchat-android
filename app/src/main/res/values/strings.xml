@@ -4,4 +4,5 @@
     <string name="drawer_close">Close navigation drawer</string>
     <string name="not_close_hint">Not close enough to this school.</string>
     <string name="close_hint">Enter Message.</string>
+    <string name="no_data_available">No Messages Yet</string>
 </resources>
