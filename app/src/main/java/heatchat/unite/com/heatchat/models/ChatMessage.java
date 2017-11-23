@@ -11,6 +11,7 @@ import com.google.firebase.database.IgnoreExtraProperties;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @IgnoreExtraProperties
 @Entity(tableName = "chatmessage")
@@ -83,6 +84,27 @@ public class ChatMessage implements Comparable<ChatMessage> {
         result.put("lon", lon);
 
         return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+
+        if (obj == null)
+            return false;
+        else if (((ChatMessage) obj).messageID.equals(this.messageID))
+            return true;
+        else
+            return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.messageID);
+    }
+
+    @Override
+    public String toString() {
+        return this.getMessageID();
     }
 
     @Override

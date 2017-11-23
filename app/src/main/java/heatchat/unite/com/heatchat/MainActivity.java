@@ -374,7 +374,7 @@ public class MainActivity extends AppCompatActivity {
                     selectedSchool.getLon(),
                     longitude,
                     0.0,
-                    0.0) > 30000) {
+                    0.0) > selectedSchool.getRadius() * 1000) {
                 setEditingEnabled(false);
                 return false;
             } else {
@@ -390,16 +390,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
                 ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
-                cm.setMessageID(dataSnapshot.getKey());
-                cm.setPath(selectedSchool.getPath());
-                messagesQuery.saveMessage(cm);
-                Log.d("Dataset Size", Integer.toString(dataset.size()));
-                if (dataset.size() >= maxMessages)
-                    dataset = dataset.subList(1, maxMessages);
-                dataset.add(cm);
-                Log.d("Dataset Size", Integer.toString(dataset.size()));
-                messageAdapter.notifyDataSetChanged();
-                recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
+
+                if (cm != null) {
+                    cm.setMessageID(dataSnapshot.getKey());
+                    if (!dataset.contains(cm)) {
+                        cm.setPath(selectedSchool.getPath());
+                        messagesQuery.saveMessage(cm);
+                        if (dataset.size() >= maxMessages)
+                            dataset = dataset.subList(1, maxMessages);
+                        dataset.add(cm);
+                        messageAdapter.notifyDataSetChanged();
+                        recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
+                    }
+                }
 
                 if (recyclerView.getVisibility() == View.GONE) {
                     recyclerView.setVisibility(View.VISIBLE);
@@ -433,6 +436,7 @@ public class MainActivity extends AppCompatActivity {
 
         dataset.addAll(messagesQuery.getMessages(school));
         Collections.sort(dataset);
+        Log.d("Loaded Dataset", dataset.toString());
 
         if (dataset.size() == 0)
             mDatabase

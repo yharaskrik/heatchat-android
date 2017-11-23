@@ -14,6 +14,7 @@ public class School implements Comparable<School> {
     private String name;
     private double lat, lon, distance;
     private String path;
+    private int radius;
 
     public School() {
     }
@@ -74,6 +75,14 @@ public class School implements Comparable<School> {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public int getRadius() {
+        return radius;
+    }
+
+    public void setRadius(int radius) {
+        this.radius = radius;
     }
 
     @Override
