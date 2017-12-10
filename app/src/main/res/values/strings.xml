@@ -5,4 +5,7 @@
     <string name="not_close_hint">Not close enough to this school.</string>
     <string name="close_hint">Enter Message.</string>
     <string name="no_data_available">No Messages Yet</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

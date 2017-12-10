@@ -22,7 +22,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -38,7 +37,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,6 +50,7 @@ import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.query.MessagesQuery;
+import heatchat.unite.com.heatchat.ui.SchoolListFragment;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
@@ -60,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int ACCESS_FINE_LOCATION_CODE = 104;
     private static int maxMessages = 100;
+
     @BindView(R.id.textViewTitle)
     TextView toolbarTitle;
     @BindView(R.id.toolbar)
@@ -70,14 +70,13 @@ public class MainActivity extends AppCompatActivity {
     Button mSubmitButton;
     @BindView(R.id.drawer_layout)
     DrawerLayout mDrawerLayout;
-    @BindView(R.id.left_drawer)
-    ListView mDrawerList;
     @BindView(R.id.list_of_messages)
     RecyclerView recyclerView;
     @BindView(R.id.navigation)
     NavigationView navDrawer;
     @BindView(R.id.empty_view)
     TextView emptyView;
+
     private FirebaseAnalytics mFirebaseAnaltyics;
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
@@ -86,11 +85,12 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseReference mDatabase;
     private int requestCode = 0;
     private LinearLayoutManager llm = new LinearLayoutManager(this);
-    private LinearLayoutManager llmSchools = new LinearLayoutManager(this);
+
     private CharSequence mTitle;
     private ActionBarDrawerToggle mDrawerToggle;
-    private ArrayAdapter mDrawerAdapter;
+
     private Disposable subscription;
+
     private ReactiveLocationProvider locationProvider;
     private MessagesQuery messagesQuery;
     private Double latitude;
@@ -98,11 +98,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean isLocation = false;
     private boolean isSorted = false;
     private List<ChatMessage> dataset;
-    private List<School> schools;
     private School selectedSchool;
     private boolean locationSent = false;
-
-    private ArrayList<String> mItems;
 
     public static double distance(double lat1, double lat2, double lon1,
                                   double lon2, double el1, double el2) {
@@ -142,8 +139,6 @@ public class MainActivity extends AppCompatActivity {
         mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
         mAuth = FirebaseAuth.getInstance();
         mDatabase = FirebaseDatabase.getInstance().getReference();
-        mItems = new ArrayList<>();
-        schools = new ArrayList<>();
 
         initializeDrawer();
 
@@ -175,13 +170,56 @@ public class MainActivity extends AppCompatActivity {
             loadSchools();
         }
 
-        mSubmitButton.setOnClickListener(view -> writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString()));
+        if (savedInstanceState == null) {
+            getSupportFragmentManager().beginTransaction().add(R.id.school_list_container,
+                    SchoolListFragment.newInstance(), "SchoolListFragment")
+                    .commit();
+        }
 
-        input.setOnClickListener(v -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
+        mSubmitButton.setOnClickListener(
+                view -> writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(),
+                        input.getText().toString()));
 
-        input.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
+        input.setOnClickListener(
+                v -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
+
+        input.addOnLayoutChangeListener(
+                (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(
+                        messageAdapter.getItemCount()));
 
         setEditingEnabled(false);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        Log.d("PERMISSION GRANTED", Integer.toString(requestCode));
+        Log.d("PERMISSION GRANTED", Integer.toString(ACCESS_FINE_LOCATION_CODE));
+        switch (requestCode) {
+            case ACCESS_FINE_LOCATION_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    getLocation();
+                } else {
+                    setEditingEnabled(false);
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        getLocation();
+        recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
     }
 
     private void sendLocation() {
@@ -203,13 +241,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeDrawer() {
-        mDrawerAdapter = new ArrayAdapter<>(
-                MainActivity.this,
-                R.layout.drawer_list_item,
-                mItems);
-        mDrawerList.setAdapter(mDrawerAdapter);
+//        mDrawerList.setAdapter(mDrawerAdapter);
 
-        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+//        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
 
         mDrawerToggle = new ActionBarDrawerToggle(
                 MainActivity.this,
@@ -237,7 +271,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loadSchools() {
-        mDatabase.child("schools").addListenerForSingleValueEvent(new ValueEventListener() {
+//        schoolListViewModel.getSchools().observe(this, schools1 -> {
+//            mItems.clear();
+//            for (School school : schools1) {
+//                mItems.add(school.getName());
+//            }
+//            mDrawerAdapter.notifyDataSetChanged();
+//            if (!schools1.isEmpty())
+//                changeSchool(schools1.get(0));
+//
+//        });
+/*        mDatabase.child("schools").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 schools.clear();
@@ -269,13 +313,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCancelled(DatabaseError databaseError) {
             }
-        });
+        });*/
     }
 
     private void getLocation() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, ACCESS_FINE_LOCATION_CODE);
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    ACCESS_FINE_LOCATION_CODE);
         } else {
             if (locationProvider == null) {
                 locationProvider = new ReactiveLocationProvider(this);
@@ -314,14 +361,15 @@ public class MainActivity extends AppCompatActivity {
                         this.longitude = location.getLongitude();
                         this.latitude = location.getLatitude();
                         checkSchoolLocation();
-                        if (!isSorted && schools.size() > 0) {
-                            Collections.sort(schools);
-                            mItems.clear();
-                            for (School school : schools)
-                                mItems.add(school.getName());
-                            if (mDrawerAdapter != null)
-                                mDrawerAdapter.notifyDataSetChanged();
-                        }
+                        //TODO: Not sure what this is????
+//                        if (!isSorted && schools.size() > 0) {
+//                            Collections.sort(schools);
+//                            mItems.clear();
+//                            for (School school : schools)
+//                                mItems.add(school.getName());
+//                            if (mDrawerAdapter != null)
+//                                mDrawerAdapter.notifyDataSetChanged();
+//                        }
                         isLocation = true;
                     }, throwable -> {
                         Log.e("RXJAVA", "Throwable " + throwable.getMessage());
@@ -329,28 +377,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        Log.d("PERMISSION GRANTED", Integer.toString(requestCode));
-        Log.d("PERMISSION GRANTED", Integer.toString(ACCESS_FINE_LOCATION_CODE));
-        switch (requestCode) {
-            case ACCESS_FINE_LOCATION_CODE: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    getLocation();
-                } else {
-                    setEditingEnabled(false);
-                }
-            }
-        }
-    }
-
     private void checkAndSetLocationPermissions() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, ACCESS_FINE_LOCATION_CODE);
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    ACCESS_FINE_LOCATION_CODE);
             this.requestCode++;
         } else {
             Log.d("XYZ", "Setting location disposable");
@@ -508,7 +541,9 @@ public class MainActivity extends AppCompatActivity {
                         .child("messages").push().getKey();
 
                 Map<String, Object> childUpdates = new HashMap<>();
-                childUpdates.put("schoolMessages/" + this.selectedSchool.getPath() + "/messages/" + key, postValues);
+                childUpdates.put(
+                        "schoolMessages/" + this.selectedSchool.getPath() + "/messages/" + key,
+                        postValues);
 
                 mDatabase.updateChildren(childUpdates);
 
@@ -523,13 +558,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode,
-                                    Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-    }
-
     private void signInAnonymously() {
         mAuth.signInAnonymously()
                 .addOnCompleteListener(this, task -> {
@@ -541,13 +569,16 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         AlertDialog.Builder builder;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            builder = new AlertDialog.Builder(MainActivity.this, android.R.style.Theme_Material_Dialog_Alert);
+                            builder = new AlertDialog.Builder(MainActivity.this,
+                                    android.R.style.Theme_Material_Dialog_Alert);
                         } else {
                             builder = new AlertDialog.Builder(MainActivity.this);
                         }
                         builder.setTitle("Authentication Failed")
-                                .setMessage("Authentication to Heatchat servers failed. Press ok to try again.")
-                                .setPositiveButton(android.R.string.ok, (dialog, which) -> signInAnonymously())
+                                .setMessage(
+                                        "Authentication to Heatchat servers failed. Press ok to try again.")
+                                .setPositiveButton(android.R.string.ok,
+                                        (dialog, which) -> signInAnonymously())
                                 .setNegativeButton(android.R.string.no, (dialog, which) -> {
                                     // do nothing
                                 })
@@ -557,22 +588,15 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        getLocation();
-        recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
-    }
-
     /* The click listner for ListView in the navigation drawer */
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            if (schools.get(position).getPath() != selectedSchool.getPath()) {
-                mDatabase.removeEventListener(messageListener);
-                changeSchool(schools.get(position));
-            }
-            mDrawerLayout.closeDrawers();
+//            if (schools.get(position).getPath() != selectedSchool.getPath()) {
+//                mDatabase.removeEventListener(messageListener);
+//                changeSchool(schools.get(position));
+//            }
+//            mDrawerLayout.closeDrawers();
         }
     }
 }

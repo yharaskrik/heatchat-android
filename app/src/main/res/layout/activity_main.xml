@@ -122,8 +122,8 @@
         tools:layout_editor_absoluteX="38dp"
         tools:layout_editor_absoluteY="8dp">
 
-        <ListView
-            android:id="@+id/left_drawer"
+        <FrameLayout
+            android:id="@+id/school_list_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="start"
@@ -132,7 +132,7 @@
             android:divider="@android:color/transparent"
             android:dividerHeight="0dp"
             android:drawSelectorOnTop="true"
-            android:listSelector="#00000000" />
+            android:listSelector="#00000000"/>
 
     </android.support.design.widget.NavigationView>
 
