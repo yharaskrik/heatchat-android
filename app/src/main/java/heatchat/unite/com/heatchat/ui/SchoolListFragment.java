@@ -17,10 +17,12 @@ import butterknife.ButterKnife;
 import butterknife.Unbinder;
 import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.SchoolListAdapter;
+import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.viewmodel.SchoolListViewModel;
+import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 
 /**
- * A simple {@link Fragment} subclass.
+ * A simple fragment that displays the list of schools.
  * Activities that contain this fragment must implement the
  * {@link SchoolListFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
@@ -35,6 +37,7 @@ public class SchoolListFragment extends Fragment {
     private SchoolListViewModel schoolListViewModel;
     private SchoolListAdapter adapter = new SchoolListAdapter();
     private Unbinder unbinder;
+    private SharedViewModel sharedViewModel;
 
     public SchoolListFragment() {
         // Required empty public constructor
@@ -56,13 +59,13 @@ public class SchoolListFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-        }
-        schoolListViewModel = ViewModelProviders.of(getActivity())
+        adapter = new SchoolListAdapter();
+        schoolListViewModel = ViewModelProviders.of(this)
                 .get(SchoolListViewModel.class);
-        schoolListViewModel.getSchools().observe(this, schools -> {
-            adapter.setSchools(schools);
-        });
+        sharedViewModel = ViewModelProviders.of(getActivity())
+                .get(SharedViewModel.class);
+        schoolListViewModel.getSchools().observe(this, schools -> adapter.setSchools(schools));
+        adapter.setClickListener(this::changeSchool);
     }
 
     @Override
@@ -100,6 +103,10 @@ public class SchoolListFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
+    }
+
+    private void changeSchool(School school) {
+        sharedViewModel.select(school);
     }
 
     /**

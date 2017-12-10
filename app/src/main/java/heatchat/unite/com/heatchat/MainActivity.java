@@ -1,6 +1,7 @@
 package heatchat.unite.com.heatchat;
 
 import android.Manifest;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -51,6 +52,7 @@ import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.query.MessagesQuery;
 import heatchat.unite.com.heatchat.ui.SchoolListFragment;
+import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
@@ -127,7 +129,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         this.locationSent = false;
-
+        final SharedViewModel sharedViewModel = ViewModelProviders.of(this)
+                .get(SharedViewModel.class);
+        sharedViewModel.getSelectedSchool().observe(this, this::changeSchool);
         messagesQuery = new MessagesQuery(MainActivity.this);
 
         setSupportActionBar(toolbar);
@@ -502,6 +506,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void changeSchool(School school) {
+        mDrawerLayout.closeDrawers();
         dataset.clear();
         messageAdapter.notifyDataSetChanged();
         if (messageListener != null)
