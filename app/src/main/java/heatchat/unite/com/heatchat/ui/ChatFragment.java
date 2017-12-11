@@ -7,7 +7,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,17 +15,9 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -35,8 +26,7 @@ import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
-import heatchat.unite.com.heatchat.query.MessagesQuery;
-import heatchat.unite.com.heatchat.util.DistanceUtil;
+import heatchat.unite.com.heatchat.viewmodel.ChatViewModel;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 
 /**
@@ -58,15 +48,16 @@ public class ChatFragment extends Fragment {
     EditText input;
     @BindView(R.id.empty_view)
     TextView emptyView;
-    private DatabaseReference mDatabase;
+
     private List<ChatMessage> dataset;
+
     private ChatMessageAdapter messageAdapter;
+
     private Unbinder unbinder;
-    private School selectedSchool;
+
     private Double latitude;
     private Double longitude;
-    private MessagesQuery messagesQuery;
-    private ChildEventListener messageListener;
+    private ChatViewModel chatViewModel;
 
     public ChatFragment() {
         // Required empty public constructor
@@ -76,15 +67,11 @@ public class ChatFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
      * @return A new instance of fragment ChatFragment.
      */
-    public static ChatFragment newInstance(String param1, String param2) {
+    public static ChatFragment newInstance() {
         ChatFragment fragment = new ChatFragment();
         Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
     }
@@ -92,15 +79,18 @@ public class ChatFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mDatabase = FirebaseDatabase.getInstance().getReference();
         dataset = new ArrayList<>();
         messageAdapter = new ChatMessageAdapter(dataset);
-        messagesQuery = new MessagesQuery(getContext());
-        messageListener = initializeMessageListener();
+
+        // Acquire the view models.
+        chatViewModel = ViewModelProviders.of(this).get(ChatViewModel.class);
+
+        // Acquire the shared view model to listen to the changing school.
         ViewModelProviders.of(getActivity())
                 .get(SharedViewModel.class)
                 .getSelectedSchool()
                 .observe(this, this::changeSchool);
+
     }
 
     @Override
@@ -114,10 +104,15 @@ public class ChatFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         unbinder = ButterKnife.bind(this, view);
+
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(this.messageAdapter);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        ((LinearLayoutManager) recyclerView.getLayoutManager()).setStackFromEnd(true);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        layoutManager.setStackFromEnd(true);
+        recyclerView.setLayoutManager(layoutManager);
+
+
         mSubmitButton.setOnClickListener(v -> writeNewPost(
                 FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString()));
         input.setOnClickListener(
@@ -136,7 +131,7 @@ public class ChatFragment extends Fragment {
     }
 
     private void writeNewPost(String userId, String body) {
-        body = body.trim();
+/*        body = body.trim();
         if (checkSchoolLocation()) {
             if (body != "" && !body.isEmpty()) {
                 ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
@@ -162,15 +157,11 @@ public class ChatFragment extends Fragment {
 //                childUpdates.put("/schools/" + key, postValues);
 //                mDatabase.updateChildren(childUpdates);
             }
-        }
-    }
-
-    public void setSelectedSchool(School selectedSchool) {
-        this.selectedSchool = selectedSchool;
+        }*/
     }
 
     private boolean checkSchoolLocation() {
-        if (selectedSchool != null && longitude != null && latitude != null) {
+/*        if (selectedSchool != null && longitude != null && latitude != null) {
             Log.d("Changing:", Double.toString(DistanceUtil.distance(selectedSchool.getLat(),
                     latitude,
                     selectedSchool.getLon(),
@@ -190,7 +181,8 @@ public class ChatFragment extends Fragment {
                 return true;
             }
         } else
-            return false;
+            return false;*/
+        return false;
     }
 
     public void setLocation(Location location) {
@@ -210,45 +202,24 @@ public class ChatFragment extends Fragment {
     }
 
     private void changeSchool(School school) {
+        // Clean up the previous messages
+        chatViewModel.getSchoolMessages().removeObservers(this);
         dataset.clear();
-        if (school != null) {
+        messageAdapter.notifyDataSetChanged();
+        // Set the new school and start observing again
+        chatViewModel.setSchool(school);
+        chatViewModel.getSchoolMessages().observe(this, chatMessages -> {
+            dataset.clear();
+            if (chatMessages != null) {
+                dataset.addAll(chatMessages);
+            }
             messageAdapter.notifyDataSetChanged();
-            if (messageListener != null)
-                mDatabase
-                        .child("schoolMessages")
-                        .child(school.getPath())
-                        .child("messages")
-                        .removeEventListener(messageListener);
-            displayChatMessages(school);
-        }
+            recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
+            showEmptyIfEmpty();
+        });
     }
 
-    private void displayChatMessages(School school) {
-        this.selectedSchool = school;
-        Log.d("PATH", school.getPath());
-
-        dataset.addAll(messagesQuery.getMessages(school));
-        Collections.sort(dataset);
-        Log.d("Loaded Dataset", dataset.toString());
-
-        if (dataset.size() == 0)
-            mDatabase
-                    .child("schoolMessages")
-                    .child(school.getPath())
-                    .child("messages")
-                    .addChildEventListener(initializeMessageListener());
-        else {
-            mDatabase
-                    .child("schoolMessages")
-                    .child(school.getPath())
-                    .child("messages")
-                    .orderByChild("time")
-                    .startAt(dataset.get(dataset.size() - 1).getTime())
-                    .addChildEventListener(initializeMessageListener());
-
-            messageAdapter.notifyDataSetChanged();
-        }
-
+    private void showEmptyIfEmpty() {
         if (dataset.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
             emptyView.setVisibility(View.VISIBLE);
@@ -256,53 +227,5 @@ public class ChatFragment extends Fragment {
             recyclerView.setVisibility(View.VISIBLE);
             emptyView.setVisibility(View.GONE);
         }
-
-
-        Log.d("PATH", Integer.toString(dataset.size()));
-    }
-
-    private ChildEventListener initializeMessageListener() {
-        messageListener = new ChildEventListener() {
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
-                ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
-
-                if (cm != null) {
-                    cm.setMessageID(dataSnapshot.getKey());
-                    if (!dataset.contains(cm)) {
-                        cm.setPath(selectedSchool.getPath());
-                        messagesQuery.saveMessage(cm);
-                        if (dataset.size() >= maxMessages)
-                            dataset = dataset.subList(1, maxMessages);
-                        dataset.add(cm);
-                        messageAdapter.notifyDataSetChanged();
-                        recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
-                    }
-                }
-
-                if (recyclerView.getVisibility() == View.GONE) {
-                    recyclerView.setVisibility(View.VISIBLE);
-                    emptyView.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-            }
-        };
-
-        return messageListener;
     }
 }

@@ -39,7 +39,9 @@ public class MessagesQuery {
     private static class GetMessagesTask extends AsyncTask<School, Void, List<ChatMessage>> {
         @Override
         protected List<ChatMessage> doInBackground(School... schools) {
-            List<ChatMessage> messages = db.chatMessageDao().loadMessagesByPath(schools[0].getPath());
+            List<ChatMessage> messages = db.chatMessageDao()
+                    .loadMessagesByPath(schools[0].getPath())
+                    .blockingFirst();
             if (messages.size() > 100)
                 return messages.subList(messages.size() - maxMessages + 1, messages.size() - 1);
             else

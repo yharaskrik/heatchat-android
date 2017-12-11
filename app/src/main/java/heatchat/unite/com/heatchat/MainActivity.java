@@ -16,16 +16,10 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,27 +27,17 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
-import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
-import heatchat.unite.com.heatchat.query.MessagesQuery;
 import heatchat.unite.com.heatchat.ui.ChatFragment;
 import heatchat.unite.com.heatchat.ui.SchoolListFragment;
-import heatchat.unite.com.heatchat.util.DistanceUtil;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
@@ -137,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction().add(R.id.school_list_container,
                     SchoolListFragment.newInstance(), "SchoolListFragment")
-                    .add(R.id.main_container, ChatFragment.newInstance("", ""))
+                    .add(R.id.main_container, ChatFragment.newInstance())
                     .commit();
         }
     }
@@ -302,7 +286,6 @@ public class MainActivity extends AppCompatActivity {
     private void changeSchool(School school) {
         mDrawerLayout.closeDrawers();
         toolbar.setTitle(school.getName() + " Heatchat");
-//        toolbarTitle.setText(school.getName() + " Heatchat");
         toolbar.setTitleTextColor(Color.parseColor("#ffffff"));
         getLocation();
     }
