@@ -7,6 +7,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,7 +81,7 @@ public class ChatFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         dataset = new ArrayList<>();
-        messageAdapter = new ChatMessageAdapter(dataset);
+        messageAdapter = new ChatMessageAdapter();
 
         // Acquire the view models.
         chatViewModel = ViewModelProviders.of(this).get(ChatViewModel.class);
@@ -209,18 +210,18 @@ public class ChatFragment extends Fragment {
         // Set the new school and start observing again
         chatViewModel.setSchool(school);
         chatViewModel.getSchoolMessages().observe(this, chatMessages -> {
-            dataset.clear();
-            if (chatMessages != null) {
-                dataset.addAll(chatMessages);
+            if (chatMessages == null) {
+                messageAdapter.onNewData(new ArrayList<>());
+            } else {
+                Log.d("ChatFragment", "Got message list size: " + chatMessages.size());
+                messageAdapter.onNewData(new ArrayList<>(chatMessages));
             }
-            messageAdapter.notifyDataSetChanged();
-            recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
             showEmptyIfEmpty();
         });
     }
 
     private void showEmptyIfEmpty() {
-        if (dataset.isEmpty()) {
+        if (messageAdapter.getItemCount() == 0) {
             recyclerView.setVisibility(View.GONE);
             emptyView.setVisibility(View.VISIBLE);
         } else {

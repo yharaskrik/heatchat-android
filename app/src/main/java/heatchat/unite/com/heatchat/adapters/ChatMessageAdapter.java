@@ -1,6 +1,7 @@
 package heatchat.unite.com.heatchat.adapters;
 
 import android.content.Context;
+import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -11,22 +12,27 @@ import android.widget.TextView;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.models.ChatMessage;
+import io.reactivex.Single;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class ChatMessageAdapter extends RecyclerView.Adapter {
 
     private static final int VIEW_TYPE_MESSAGE_SENT = 1;
     private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
     private List<ChatMessage> chatMessages;
-    private Context mContext;
+    private Disposable updateDisposable;
+    private RecyclerView recycler;
 
-    public ChatMessageAdapter(List<ChatMessage> messageList) {
-//        this.mContext = context;
-        this.chatMessages = messageList;
+    public ChatMessageAdapter() {
+        this.chatMessages = new ArrayList<>();
     }
 
     @Override
@@ -60,6 +66,7 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         ChatMessage message = chatMessages.get(position);
 
+
         switch (holder.getItemViewType()) {
             case VIEW_TYPE_MESSAGE_SENT:
                 ((ChatMessageAdapter.ChatMessageSendHolder) holder).bind(message);
@@ -70,8 +77,37 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
     }
 
     @Override
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        this.recycler = recyclerView;
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        this.recycler = null;
+    }
+
+    @Override
     public int getItemCount() {
         return chatMessages.size();
+    }
+
+    public void onNewData(List<ChatMessage> newMessageList) {
+        if (updateDisposable != null) {
+            updateDisposable.dispose();
+        }
+        updateDisposable = Single.fromCallable(
+                () -> DiffUtil.calculateDiff(new ChatMessageDiff(newMessageList)))
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(diffResult -> {
+                    chatMessages = newMessageList;
+                    diffResult.dispatchUpdatesTo(this);
+                    if (recycler != null) {
+                        recycler.scrollToPosition(chatMessages.size() - 1);
+                    }
+                });
     }
 
     public class ChatMessageSendHolder extends RecyclerView.ViewHolder {
@@ -110,4 +146,35 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
         }
     }
 
+    private class ChatMessageDiff extends DiffUtil.Callback {
+        private final List<ChatMessage> newMessageList;
+
+        public ChatMessageDiff(List<ChatMessage> newMessageList) {
+            this.newMessageList = newMessageList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return chatMessages.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newMessageList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            return chatMessages.get(oldItemPosition)
+                    .getMessageID()
+                    .equals(newMessageList.get(newItemPosition).getMessageID());
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            return chatMessages.get(oldItemPosition)
+                    .getText()
+                    .equals(newMessageList.get(newItemPosition).getText());
+        }
+    }
 }

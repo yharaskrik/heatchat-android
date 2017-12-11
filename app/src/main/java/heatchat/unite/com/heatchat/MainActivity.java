@@ -287,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
         mDrawerLayout.closeDrawers();
         toolbar.setTitle(school.getName() + " Heatchat");
         toolbar.setTitleTextColor(Color.parseColor("#ffffff"));
-        getLocation();
+//        getLocation();
     }
 
     private void signInAnonymously() {

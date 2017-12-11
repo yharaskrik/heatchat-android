@@ -13,9 +13,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import heatchat.unite.com.heatchat.AppDatabase;
 import heatchat.unite.com.heatchat.models.ChatMessage;
@@ -83,11 +81,6 @@ public class ChatMessageRepository implements ChildEventListener {
         currentSchool = school;
         return db.chatMessageDao().loadMessagesByPath(school.getPath())
                 .doOnSubscribe(subscription -> addFirebaseChildUpdates(school))
-                .map(chatMessages -> {
-                    Collections.reverse(chatMessages);
-                    return chatMessages;
-                })
-                .debounce(100, TimeUnit.MILLISECONDS)
                 .doOnEach(this::checkAndClearOldMessages)
                 .doFinally(() -> removeFirebaseChildUpdates(school));
     }
@@ -114,10 +107,10 @@ public class ChatMessageRepository implements ChildEventListener {
     @WorkerThread
     private void checkAndClearOldMessages(Notification<List<ChatMessage>> chatMessages) {
         final List<ChatMessage> value = chatMessages.getValue();
-        if (value.size() >= 100) {
+        if (value.size() > 10) {
             Log.d("ChatMessageRepository", "List is at the maximum size");
-            final ChatMessage chatMessage = value.get(0);
-            Log.d("ChatMessageRepository", chatMessage.toString());
+            final ChatMessage chatMessage = value.get(value.size() - 11);
+            Log.d("ChatMessageRepository", chatMessage.toString() + " " + chatMessage.getTime());
             db.chatMessageDao()
                     .deleteOldMessages(chatMessage.getPath(), chatMessage.getTime());
         }

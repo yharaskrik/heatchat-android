@@ -17,7 +17,7 @@ import io.reactivex.Maybe;
 @Dao
 public interface ChatMessageDao {
 
-    @Query("SELECT * FROM chatmessage WHERE path = :path ORDER BY time DESC LIMIT 100")
+    @Query("SELECT * FROM chatmessage WHERE path = :path ORDER BY time ASC")
     Flowable<List<ChatMessage>> loadMessagesByPath(String path);
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

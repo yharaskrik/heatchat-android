@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+
     package="heatchat.unite.com.heatchat">
 
     <application
+        android:name=".HeatChatApplication"
         android:allowBackup="true"
         android:icon="@drawable/ic_app_icon_512x5122"
         android:label="@string/app_name"
         android:supportsRtl="true"
+
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
