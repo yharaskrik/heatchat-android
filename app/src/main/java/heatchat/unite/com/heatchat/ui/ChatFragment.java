@@ -1,13 +1,11 @@
 package heatchat.unite.com.heatchat.ui;
 
 import android.arch.lifecycle.ViewModelProviders;
-import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,6 +27,7 @@ import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.viewmodel.ChatViewModel;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
+import timber.log.Timber;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -85,6 +84,8 @@ public class ChatFragment extends Fragment {
 
         // Acquire the view models.
         chatViewModel = ViewModelProviders.of(this).get(ChatViewModel.class);
+
+        chatViewModel.editEnabled().observe(this, this::setEditingEnabled);
 
         // Acquire the shared view model to listen to the changing school.
         ViewModelProviders.of(getActivity())
@@ -161,36 +162,6 @@ public class ChatFragment extends Fragment {
         }*/
     }
 
-    private boolean checkSchoolLocation() {
-/*        if (selectedSchool != null && longitude != null && latitude != null) {
-            Log.d("Changing:", Double.toString(DistanceUtil.distance(selectedSchool.getLat(),
-                    latitude,
-                    selectedSchool.getLon(),
-                    longitude,
-                    0.0,
-                    0.0)));
-            if (DistanceUtil.distance(selectedSchool.getLat(),
-                    latitude,
-                    selectedSchool.getLon(),
-                    longitude,
-                    0.0,
-                    0.0) > selectedSchool.getRadius() * 1000) {
-                setEditingEnabled(false);
-                return false;
-            } else {
-                setEditingEnabled(true);
-                return true;
-            }
-        } else
-            return false;*/
-        return false;
-    }
-
-    public void setLocation(Location location) {
-        latitude = location.getLatitude();
-        longitude = location.getLongitude();
-    }
-
     private void setEditingEnabled(boolean enabled) {
         input.setEnabled(enabled);
         if (enabled) {
@@ -205,23 +176,23 @@ public class ChatFragment extends Fragment {
     private void changeSchool(School school) {
         // Clean up the previous messages
         chatViewModel.getSchoolMessages().removeObservers(this);
-        dataset.clear();
-        messageAdapter.notifyDataSetChanged();
+        messageAdapter.onNewData(new ArrayList<>());
         // Set the new school and start observing again
         chatViewModel.setSchool(school);
         chatViewModel.getSchoolMessages().observe(this, chatMessages -> {
             if (chatMessages == null) {
                 messageAdapter.onNewData(new ArrayList<>());
+                showEmptyIfEmpty(0);
             } else {
-                Log.d("ChatFragment", "Got message list size: " + chatMessages.size());
+                Timber.d("Got message list size: " + chatMessages.size());
                 messageAdapter.onNewData(new ArrayList<>(chatMessages));
+                showEmptyIfEmpty(chatMessages.size());
             }
-            showEmptyIfEmpty();
         });
     }
 
-    private void showEmptyIfEmpty() {
-        if (messageAdapter.getItemCount() == 0) {
+    private void showEmptyIfEmpty(int count) {
+        if (count == 0) {
             recyclerView.setVisibility(View.GONE);
             emptyView.setVisibility(View.VISIBLE);
         } else {
