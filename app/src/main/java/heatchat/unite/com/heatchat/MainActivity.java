@@ -51,7 +51,9 @@ import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.query.MessagesQuery;
+import heatchat.unite.com.heatchat.ui.ChatFragment;
 import heatchat.unite.com.heatchat.ui.SchoolListFragment;
+import heatchat.unite.com.heatchat.util.DistanceUtil;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
@@ -66,27 +68,15 @@ public class MainActivity extends AppCompatActivity {
     TextView toolbarTitle;
     @BindView(R.id.toolbar)
     Toolbar toolbar;
-    @BindView(R.id.edittext_chatbox)
-    EditText input;
-    @BindView(R.id.button_chatbox_send)
-    Button mSubmitButton;
     @BindView(R.id.drawer_layout)
     DrawerLayout mDrawerLayout;
-    @BindView(R.id.list_of_messages)
-    RecyclerView recyclerView;
     @BindView(R.id.navigation)
     NavigationView navDrawer;
-    @BindView(R.id.empty_view)
-    TextView emptyView;
 
     private FirebaseAnalytics mFirebaseAnaltyics;
     private FirebaseAuth mAuth;
     private FirebaseUser mUser;
-    private ChatMessageAdapter messageAdapter;
-    private ChildEventListener messageListener;
-    private DatabaseReference mDatabase;
     private int requestCode = 0;
-    private LinearLayoutManager llm = new LinearLayoutManager(this);
 
     private CharSequence mTitle;
     private ActionBarDrawerToggle mDrawerToggle;
@@ -94,46 +84,24 @@ public class MainActivity extends AppCompatActivity {
     private Disposable subscription;
 
     private ReactiveLocationProvider locationProvider;
-    private MessagesQuery messagesQuery;
     private Double latitude;
     private Double longitude;
     private boolean isLocation = false;
     private boolean isSorted = false;
-    private List<ChatMessage> dataset;
-    private School selectedSchool;
     private boolean locationSent = false;
-
-    public static double distance(double lat1, double lat2, double lon1,
-                                  double lon2, double el1, double el2) {
-
-        final int R = 6371; // Radius of the earth
-
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        double distance = R * c * 1000; // convert to meters
-
-        double height = el1 - el2;
-
-        distance = Math.pow(distance, 2) + Math.pow(height, 2);
-
-        return Math.sqrt(distance);
-    }
+    private DatabaseReference mDatabase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+
         this.locationSent = false;
+
         final SharedViewModel sharedViewModel = ViewModelProviders.of(this)
                 .get(SharedViewModel.class);
         sharedViewModel.getSelectedSchool().observe(this, this::changeSchool);
-        messagesQuery = new MessagesQuery(MainActivity.this);
-
         setSupportActionBar(toolbar);
 
         ActionBar actionBar = getSupportActionBar();
@@ -145,13 +113,6 @@ public class MainActivity extends AppCompatActivity {
         mDatabase = FirebaseDatabase.getInstance().getReference();
 
         initializeDrawer();
-
-        dataset = new ArrayList<>();
-        messageAdapter = new ChatMessageAdapter(dataset);
-        recyclerView.setHasFixedSize(true);
-        recyclerView.setAdapter(this.messageAdapter);
-        recyclerView.setLayoutManager(llm);
-        ((LinearLayoutManager) recyclerView.getLayoutManager()).setStackFromEnd(true);
 
         checkAndSetLocationPermissions();
 
@@ -171,27 +132,14 @@ public class MainActivity extends AppCompatActivity {
                             .getDisplayName(),
                     Toast.LENGTH_LONG)
                     .show();
-            loadSchools();
         }
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction().add(R.id.school_list_container,
                     SchoolListFragment.newInstance(), "SchoolListFragment")
+                    .add(R.id.main_container, ChatFragment.newInstance("", ""))
                     .commit();
         }
-
-        mSubmitButton.setOnClickListener(
-                view -> writeNewPost(FirebaseAuth.getInstance().getCurrentUser().getUid(),
-                        input.getText().toString()));
-
-        input.setOnClickListener(
-                v -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
-
-        input.addOnLayoutChangeListener(
-                (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(
-                        messageAdapter.getItemCount()));
-
-        setEditingEnabled(false);
     }
 
     @Override
@@ -206,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     getLocation();
                 } else {
-                    setEditingEnabled(false);
+//                    setEditingEnabled(false);
                 }
             }
         }
@@ -223,7 +171,6 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         getLocation();
-        recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
     }
 
     private void sendLocation() {
@@ -274,52 +221,6 @@ public class MainActivity extends AppCompatActivity {
         mDrawerLayout.addDrawerListener(mDrawerToggle);
     }
 
-    private void loadSchools() {
-//        schoolListViewModel.getSchools().observe(this, schools1 -> {
-//            mItems.clear();
-//            for (School school : schools1) {
-//                mItems.add(school.getName());
-//            }
-//            mDrawerAdapter.notifyDataSetChanged();
-//            if (!schools1.isEmpty())
-//                changeSchool(schools1.get(0));
-//
-//        });
-/*        mDatabase.child("schools").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                schools.clear();
-                for (DataSnapshot child : dataSnapshot.getChildren()) {
-                    School school = child.getValue(School.class);
-                    if (isLocation) {
-                        school.setDistance(distance(latitude,
-                                school.getLat(),
-                                longitude,
-                                school.getLon(),
-                                0.0,
-                                0.0));
-                    }
-                    schools.add(school);
-                }
-
-                if (isLocation) {
-                    isSorted = true;
-                    Collections.sort(schools);
-                }
-
-                for (School school : schools) {
-                    mItems.add(school.getName());
-                }
-                mDrawerAdapter.notifyDataSetChanged();
-                changeSchool(schools.get(0));
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-            }
-        });*/
-    }
-
     private void getLocation() {
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -338,10 +239,10 @@ public class MainActivity extends AppCompatActivity {
                             Log.d("Changing 1:", location.toString());
                             longitude = location.getLongitude();
                             latitude = location.getLatitude();
-                            checkSchoolLocation();
+//                            checkSchoolLocation();
                         }
                     });
-            checkSchoolLocation();
+//            checkSchoolLocation();
         }
     }
 
@@ -352,9 +253,9 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     ACCESS_FINE_LOCATION_CODE);
-            setEditingEnabled(false);
+//            setEditingEnabled(false);
         } else {
-            setEditingEnabled(true);
+//            setEditingEnabled(true);
             LocationRequest request = LocationRequest.create() //standard GMS LocationRequest
                     .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                     .setNumUpdates(5)
@@ -364,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("Changing 2:", location.toString());
                         this.longitude = location.getLongitude();
                         this.latitude = location.getLatitude();
-                        checkSchoolLocation();
+//                        checkSchoolLocation();
                         //TODO: Not sure what this is????
 //                        if (!isSorted && schools.size() > 0) {
 //                            Collections.sort(schools);
@@ -398,169 +299,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean checkSchoolLocation() {
-        if (selectedSchool != null && longitude != null && latitude != null) {
-            Log.d("Changing:", Double.toString(distance(selectedSchool.getLat(),
-                    latitude,
-                    selectedSchool.getLon(),
-                    longitude,
-                    0.0,
-                    0.0)));
-            if (distance(selectedSchool.getLat(),
-                    latitude,
-                    selectedSchool.getLon(),
-                    longitude,
-                    0.0,
-                    0.0) > selectedSchool.getRadius() * 1000) {
-                setEditingEnabled(false);
-                return false;
-            } else {
-                setEditingEnabled(true);
-                return true;
-            }
-        } else
-            return false;
-    }
-
-    private ChildEventListener initializeMessageListener() {
-        messageListener = new ChildEventListener() {
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
-                ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
-
-                if (cm != null) {
-                    cm.setMessageID(dataSnapshot.getKey());
-                    if (!dataset.contains(cm)) {
-                        cm.setPath(selectedSchool.getPath());
-                        messagesQuery.saveMessage(cm);
-                        if (dataset.size() >= maxMessages)
-                            dataset = dataset.subList(1, maxMessages);
-                        dataset.add(cm);
-                        messageAdapter.notifyDataSetChanged();
-                        recyclerView.smoothScrollToPosition(messageAdapter.getItemCount());
-                    }
-                }
-
-                if (recyclerView.getVisibility() == View.GONE) {
-                    recyclerView.setVisibility(View.VISIBLE);
-                    emptyView.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-            }
-        };
-
-        return messageListener;
-    }
-
-    private void displayChatMessages(School school) {
-        this.selectedSchool = school;
-        Log.d("PATH", school.getPath());
-
-        dataset.addAll(messagesQuery.getMessages(school));
-        Collections.sort(dataset);
-        Log.d("Loaded Dataset", dataset.toString());
-
-        if (dataset.size() == 0)
-            mDatabase
-                    .child("schoolMessages")
-                    .child(school.getPath())
-                    .child("messages")
-                    .addChildEventListener(initializeMessageListener());
-        else {
-            mDatabase
-                    .child("schoolMessages")
-                    .child(school.getPath())
-                    .child("messages")
-                    .orderByChild("time")
-                    .startAt(dataset.get(dataset.size() - 1).getTime())
-                    .addChildEventListener(initializeMessageListener());
-
-            messageAdapter.notifyDataSetChanged();
-        }
-
-        if (dataset.isEmpty()) {
-            recyclerView.setVisibility(View.GONE);
-            emptyView.setVisibility(View.VISIBLE);
-        } else {
-            recyclerView.setVisibility(View.VISIBLE);
-            emptyView.setVisibility(View.GONE);
-        }
-
-
-        Log.d("PATH", Integer.toString(dataset.size()));
-    }
-
     private void changeSchool(School school) {
         mDrawerLayout.closeDrawers();
-        dataset.clear();
-        messageAdapter.notifyDataSetChanged();
-        if (messageListener != null)
-            mDatabase
-                    .child("schoolMessages")
-                    .child(selectedSchool.getPath())
-                    .child("messages")
-                    .removeEventListener(messageListener);
-        displayChatMessages(school);
         toolbar.setTitle(school.getName() + " Heatchat");
 //        toolbarTitle.setText(school.getName() + " Heatchat");
         toolbar.setTitleTextColor(Color.parseColor("#ffffff"));
         getLocation();
-    }
-
-    private void setEditingEnabled(boolean enabled) {
-        input.setEnabled(enabled);
-        if (enabled) {
-            input.setHint(R.string.close_hint);
-            mSubmitButton.setVisibility(View.VISIBLE);
-        } else {
-            input.setHint(R.string.not_close_hint);
-            mSubmitButton.setVisibility(View.GONE);
-        }
-    }
-
-    private void writeNewPost(String userId, String body) {
-        body = body.trim();
-        if (checkSchoolLocation()) {
-            if (body != "" && !body.isEmpty()) {
-                ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
-                Map<String, Object> postValues = message.toMap();
-
-                String key = mDatabase
-                        .child("schoolMessages")
-                        .child(this.selectedSchool.getPath())
-                        .child("messages").push().getKey();
-
-                Map<String, Object> childUpdates = new HashMap<>();
-                childUpdates.put(
-                        "schoolMessages/" + this.selectedSchool.getPath() + "/messages/" + key,
-                        postValues);
-
-                mDatabase.updateChildren(childUpdates);
-
-                input.setText("");
-
-//                ArrayList<School> addSchools = new ArrayList<>();
-//                key = mDatabase.child("schools").push().getKey();
-//                childUpdates = new HashMap<>();
-//                childUpdates.put("/schools/" + key, postValues);
-//                mDatabase.updateChildren(childUpdates);
-            }
-        }
     }
 
     private void signInAnonymously() {
@@ -569,7 +313,6 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         Log.d("AnonymouseAuth", "signInAnonymously:success");
                         mUser = mAuth.getCurrentUser();
-                        loadSchools();
                         sendLocation();
                     } else {
                         AlertDialog.Builder builder;
@@ -593,15 +336,4 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    /* The click listner for ListView in the navigation drawer */
-    private class DrawerItemClickListener implements ListView.OnItemClickListener {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//            if (schools.get(position).getPath() != selectedSchool.getPath()) {
-//                mDatabase.removeEventListener(messageListener);
-//                changeSchool(schools.get(position));
-//            }
-//            mDrawerLayout.closeDrawers();
-        }
-    }
 }
