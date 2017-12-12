@@ -1,6 +1,7 @@
 package heatchat.unite.com.heatchat.util;
 
 import android.location.Location;
+import android.support.annotation.NonNull;
 
 import heatchat.unite.com.heatchat.models.School;
 
@@ -35,5 +36,19 @@ public class DistanceUtil {
     public static double distance(School school, Location location, double el1, double el2) {
         return distance(school.getLat(), location.getLatitude(), school.getLon(),
                 location.getLongitude(), el1, el2);
+    }
+
+    /**
+     * Checks if the current location is within 1000 meters of a school radius.
+     *
+     * @param school   The school to check
+     * @param location The current location
+     * @return True if the current location is within the schools radius, False if it is not.
+     */
+    public static boolean isLocationCloseToSchool(@NonNull School school,
+                                                  @NonNull Location location) {
+        return distance(school, location,
+                0.0,
+                0.0) < school.getRadius() * 1000;
     }
 }

@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import heatchat.unite.com.heatchat.models.CurrentSchool;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.util.LiveDataResult;
+import heatchat.unite.com.heatchat.util.LocationLiveData;
 import timber.log.Timber;
 
 /**
@@ -22,10 +23,16 @@ public class SharedViewModel extends ViewModel {
 
     private final MutableLiveData<LiveDataResult<FirebaseUser>> user = new MutableLiveData<>();
     private MutableLiveData<School> selectedSchool;
+    private LocationLiveData locationLiveData;
 
     @Inject
-    public SharedViewModel(CurrentSchool currentSchool) {
+    public SharedViewModel(CurrentSchool currentSchool, LocationLiveData locationLiveData) {
         selectedSchool = currentSchool;
+        this.locationLiveData = locationLiveData;
+    }
+
+    public LocationLiveData locationUpdates() {
+        return locationLiveData;
     }
 
     public void select(School school) {

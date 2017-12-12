@@ -1,6 +1,7 @@
 package heatchat.unite.com.heatchat.models;
 
 import android.arch.lifecycle.MutableLiveData;
+import android.support.annotation.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,5 +29,11 @@ public class CurrentSchool extends MutableLiveData<School> {
     public void setValue(School value) {
         super.setValue(value);
         // TODO save selection
+    }
+
+    @Nullable
+    @Override
+    public School getValue() {
+        return super.getValue();
     }
 }

@@ -5,10 +5,11 @@ import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.LiveDataReactiveStreams;
-import android.arch.lifecycle.MutableLiveData;
-import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.MediatorLiveData;
 import android.arch.lifecycle.Transformations;
+import android.location.Location;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -21,29 +22,29 @@ import heatchat.unite.com.heatchat.models.CurrentSchool;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.respository.ChatMessageRepository;
 import heatchat.unite.com.heatchat.util.DistanceUtil;
-import heatchat.unite.com.heatchat.util.PermissionUtil;
+import heatchat.unite.com.heatchat.util.LocationLiveData;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
-import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 import timber.log.Timber;
 
 /**
- * Created by Andrew on 12/10/2017.
+ * A view model class for the chat fragment. This provides LiveData instances for the messages for
+ * the currently selected school, and a LiveData that updates if the user can send messages based on
+ * the current location and school.
+ * <p>
+ * This view model uses some nice features of LiveData to update the message list automatically
+ * whenever the {@link CurrentSchool} singleton is updated. This saves having to do fragment
+ * interaction forwarding in activities.
  */
-
 public class ChatViewModel extends AndroidViewModel {
 
+    private final LocationLiveData locationLiveData;
     /**
-     * The repository for chat messages that provides the functionality to send and receive messages.
+     * The repository for chat messages that provides the functionality to send and receive
+     * messages.
      */
     private ChatMessageRepository repository;
-
-    /**
-     * The location provider
-     */
-    private ReactiveLocationProvider reactiveLocationProvider;
 
     /**
      * The message list that the ui can observe. This is automatically updated when the selected
@@ -52,28 +53,26 @@ public class ChatViewModel extends AndroidViewModel {
     private LiveData<List<ChatMessage>> messageList;
 
     /**
-     * Keeps track if the school is close enough to edit.
+     * Keeps track if the school is close enough to send messages to..
      */
-    private MutableLiveData<Boolean> editEnabled = new MutableLiveData<>();
+    private MediatorLiveData<Boolean> sendingEnabled = new MediatorLiveData<>();
 
+    /**
+     * Keeps the disposables that this view model may create. This is cleared when the view model
+     * is cleared.
+     */
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
     @Inject
     ChatViewModel(@NonNull Application application,
-                  ChatMessageRepository chatMessageRepository, CurrentSchool currentSchool) {
+                  ChatMessageRepository chatMessageRepository, CurrentSchool currentSchool,
+                  LocationLiveData locationLiveData) {
         super(application);
         this.repository = chatMessageRepository;
-        editEnabled.setValue(false);
-        reactiveLocationProvider = new ReactiveLocationProvider(application);
-        messageList = Transformations.switchMap(currentSchool, school -> {
-            setSchool(school);
-            return LiveDataReactiveStreams.fromPublisher(
-                    repository.setSchool(school)
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-            );
-        });
-
+        this.locationLiveData = locationLiveData;
+        sendingEnabled.setValue(false);
+        initChatMessages(currentSchool);
+        initEnabled(currentSchool, locationLiveData);
     }
 
     @Override
@@ -82,50 +81,82 @@ public class ChatViewModel extends AndroidViewModel {
         super.onCleared();
     }
 
-    public LiveData<Boolean> editEnabled() {
-        return editEnabled;
+    /**
+     * Initializes the LiveData from the ChatMessageRepository. This uses a switchMap to
+     * automatically switch update the current school in the repository and display the new stream
+     * of messages.
+     *
+     * @param currentSchool The CurrentSchool object to list to changes from.
+     */
+    private void initChatMessages(CurrentSchool currentSchool) {
+        messageList = Transformations.switchMap(currentSchool,
+                school -> LiveDataReactiveStreams.fromPublisher(
+                        repository.setSchool(school)
+                                .subscribeOn(Schedulers.io())
+                                .observeOn(AndroidSchedulers.mainThread())
+                ));
     }
 
-    @SuppressLint("MissingPermission")
-    public void setSchool(School school) {
-        editEnabled.setValue(false);
-        if (PermissionUtil.hasLocationPermissions(getApplication())) {
-            reactiveLocationProvider.getLastKnownLocation()
-                    .firstOrError()
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe((location, throwable) -> {
-                        if (throwable != null) {
-                            Timber.e(throwable);
-                            editEnabled.setValue(false);
-                        } else {
-                            if (DistanceUtil.distance(school, location,
-                                    0.0,
-                                    0.0) < school.getRadius() * 1000) {
-                                editEnabled.setValue(true);
-                            } else {
-                                editEnabled.setValue(false);
-                            }
-                        }
-                    });
+    /**
+     * Initializes the sendingEnabled mediator live data by having it react when the school or
+     * location changes.
+     *
+     * @param currentSchool    The CurrentSchool object to react to.
+     * @param locationLiveData The LocationLiveData object to react to.
+     */
+    private void initEnabled(CurrentSchool currentSchool, LocationLiveData locationLiveData) {
+        sendingEnabled.addSource(locationLiveData,
+                location -> checkCanSendMessages(currentSchool.getValue(), location));
+
+        sendingEnabled.addSource(currentSchool,
+                school -> checkCanSendMessages(school, locationLiveData.getValue()));
+    }
+
+    /**
+     * Checks if the user can send messages to this school. This is enabled if the current location
+     * is within a certain radius of the school.
+     * <p>
+     * This sets the {@link #sendingEnabled} value to true if the user can post, false if they
+     * cannot.
+     *
+     * @param school   The school to check. If null then the user cannot send messages.
+     * @param location The current location. If null then the user cannot post messages.
+     */
+    private void checkCanSendMessages(@Nullable School school, @Nullable Location location) {
+        if (school != null && location != null) {
+            Timber.d("School or Location changed to: %s : %s", school.getName(),
+                    location.toString());
+            sendingEnabled.setValue(DistanceUtil.isLocationCloseToSchool(school, location));
+        } else {
+            sendingEnabled.setValue(false);
         }
     }
 
+    /**
+     * @return The LiveData containing the boolean value if the user is allowed to post messages.
+     */
+    public LiveData<Boolean> sendingEnabled() {
+        return sendingEnabled;
+    }
+
+    /**
+     * @return The LiveData contains the continually updating list of chat messages for the current
+     * school. This will automatically change when the school changes.
+     */
     public LiveData<List<ChatMessage>> messageList() {
         return messageList;
     }
 
     @SuppressLint("MissingPermission")
     public void sendMessage(String message) {
-        final Disposable subscribe = reactiveLocationProvider.getLastKnownLocation()
-                .firstOrError()
-                .flatMapCompletable(location -> {
-                    final String uid = FirebaseAuth.getInstance().getUid();
-                    return repository.postMessage(uid, message, location);
-                })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe();
-        compositeDisposable.add(subscribe);
+        final Location location = locationLiveData.getValue();
+        final Boolean sendingEnabledValue = sendingEnabled.getValue();
+        if (sendingEnabledValue != null && sendingEnabledValue && location != null) {
+            compositeDisposable.add(
+                    repository.postMessage(FirebaseAuth.getInstance().getUid(), message, location)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe());
+        }
     }
 }

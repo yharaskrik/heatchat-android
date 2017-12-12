@@ -92,7 +92,10 @@ public class ChatFragment extends Fragment implements Injectable {
         // Acquire the view models.
         chatViewModel = ViewModelProviders.of(this, viewModelFactory).get(ChatViewModel.class);
 
-        chatViewModel.editEnabled().observe(this, this::setEditingEnabled);
+        chatViewModel.sendingEnabled().observe(this, enabled -> {
+            Timber.d("Edit enabled changed: %b", enabled);
+            setEditingEnabled(enabled);
+        });
 
         chatViewModel.messageList().observe(this, chatMessages -> {
             if (chatMessages == null) {

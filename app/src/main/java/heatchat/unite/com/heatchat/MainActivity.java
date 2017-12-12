@@ -40,6 +40,7 @@ import dagger.android.support.HasSupportFragmentInjector;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.ui.ChatFragment;
 import heatchat.unite.com.heatchat.ui.SchoolListFragment;
+import heatchat.unite.com.heatchat.util.PermissionUtil;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 import io.reactivex.disposables.Disposable;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
@@ -202,6 +203,9 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
         sharedViewModel = ViewModelProviders.of(this, viewModelFactory)
                 .get(SharedViewModel.class);
         sharedViewModel.getSelectedSchool().observe(this, this::changeSchool);
+        sharedViewModel.locationUpdates().observe(this, location -> {
+            Timber.d("Got Location %s", location);
+        });
     }
 
     private void sendLocation() {
@@ -250,22 +254,22 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
     }
 
     private void getLocation() {
-        if (ContextCompat.checkSelfPermission(this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    ACCESS_FINE_LOCATION_CODE);
-        } else {
-            if (locationProvider == null) {
-                locationProvider = new ReactiveLocationProvider(this);
-            }
-            locationProvider.getLastKnownLocation()
-                    .subscribe(location -> {
-                        Timber.d("Changing location: %s", location.toString());
-                        longitude = location.getLongitude();
-                        latitude = location.getLatitude();
-                    });
-        }
+//        if (ContextCompat.checkSelfPermission(this,
+//                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            ActivityCompat.requestPermissions(this,
+//                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+//                    ACCESS_FINE_LOCATION_CODE);
+//        } else {
+//            if (locationProvider == null) {
+//                locationProvider = new ReactiveLocationProvider(this);
+//            }
+//            locationProvider.getLastKnownLocation()
+//                    .subscribe(location -> {
+//                        Timber.d("Changing location: %s", location.toString());
+//                        longitude = location.getLongitude();
+//                        latitude = location.getLatitude();
+//                    });
+//        }
     }
 
     private void setLocationSubscription() {
@@ -303,19 +307,18 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
     }
 
     private void checkAndSetLocationPermissions() {
-        if (ContextCompat.checkSelfPermission(this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (!PermissionUtil.hasLocationPermissions(this)) {
 
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
                     ACCESS_FINE_LOCATION_CODE);
             this.requestCode++;
         } else {
-            Timber.d("Setting location disposable");
-
-            locationProvider = new ReactiveLocationProvider(this);
-            getLocation();
-            setLocationSubscription();
+//            Timber.d("Setting location disposable");
+//
+//            locationProvider = new ReactiveLocationProvider(this);
+//            getLocation();
+//            setLocationSubscription();
         }
     }
 
