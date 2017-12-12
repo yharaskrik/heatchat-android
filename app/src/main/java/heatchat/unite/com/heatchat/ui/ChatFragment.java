@@ -13,13 +13,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.google.firebase.auth.FirebaseAuth;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 import butterknife.Unbinder;
 import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
@@ -114,16 +113,12 @@ public class ChatFragment extends Fragment {
         layoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
 
-
-        mSubmitButton.setOnClickListener(v -> writeNewPost(
-                FirebaseAuth.getInstance().getCurrentUser().getUid(), input.getText().toString()));
         input.setOnClickListener(
                 v -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
 
         input.addOnLayoutChangeListener(
                 (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(
                         messageAdapter.getItemCount()));
-        setEditingEnabled(false);
     }
 
     @Override
@@ -132,34 +127,13 @@ public class ChatFragment extends Fragment {
         unbinder.unbind();
     }
 
-    private void writeNewPost(String userId, String body) {
-/*        body = body.trim();
-        if (checkSchoolLocation()) {
-            if (body != "" && !body.isEmpty()) {
-                ChatMessage message = new ChatMessage(userId, body, this.latitude, this.longitude);
-                Map<String, Object> postValues = message.toMap();
-
-                String key = mDatabase
-                        .child("schoolMessages")
-                        .child(this.selectedSchool.getPath())
-                        .child("messages").push().getKey();
-
-                Map<String, Object> childUpdates = new HashMap<>();
-                childUpdates.put(
-                        "schoolMessages/" + this.selectedSchool.getPath() + "/messages/" + key,
-                        postValues);
-
-                mDatabase.updateChildren(childUpdates);
-
-                input.setText("");
-
-//                ArrayList<School> addSchools = new ArrayList<>();
-//                key = mDatabase.child("schools").push().getKey();
-//                childUpdates = new HashMap<>();
-//                childUpdates.put("/schools/" + key, postValues);
-//                mDatabase.updateChildren(childUpdates);
-            }
-        }*/
+    @OnClick(R.id.button_chatbox_send)
+    void submitPost() {
+        final String text = input.getText().toString().trim();
+        if (text.length() > 0) {
+            chatViewModel.sendMessage(text);
+            input.getText().clear();
+        }
     }
 
     private void setEditingEnabled(boolean enabled) {

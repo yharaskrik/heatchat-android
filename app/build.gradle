@@ -30,6 +30,7 @@ ext {
     roomVersion = '1.0.0'
     rxJavaVersion = '2.0.7'
     stethoVersion = '1.5.0'
+    daggerVersion = "2.13"
 }
 
 dependencies {
@@ -77,6 +78,11 @@ dependencies {
     // ButterKnife
     implementation "com.jakewharton:butterknife:$butterKnifeVersion"
     annotationProcessor "com.jakewharton:butterknife-compiler:$butterKnifeVersion"
+
+
+    annotationProcessor "com.google.dagger:dagger-compiler:$daggerVersion"
+    compile "com.google.dagger:dagger-android-support:$daggerVersion"
+    compile "com.google.dagger:dagger:$daggerVersion"
 }
 
 

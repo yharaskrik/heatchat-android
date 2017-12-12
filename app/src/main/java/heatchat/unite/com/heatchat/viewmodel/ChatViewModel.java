@@ -10,16 +10,17 @@ import android.support.annotation.NonNull;
 
 import com.google.firebase.auth.FirebaseAuth;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.respository.ChatMessageRepository;
 import heatchat.unite.com.heatchat.util.DistanceUtil;
 import heatchat.unite.com.heatchat.util.PermissionUtil;
+import io.reactivex.Completable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 import timber.log.Timber;
@@ -36,11 +37,19 @@ public class ChatViewModel extends AndroidViewModel {
     private MutableLiveData<Boolean> editEnabled = new MutableLiveData<>();
     private School selectedSchool;
 
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
+
     public ChatViewModel(@NonNull Application application) {
         super(application);
         repository = new ChatMessageRepository(application);
         editEnabled.setValue(false);
         reactiveLocationProvider = new ReactiveLocationProvider(application);
+    }
+
+    @Override
+    protected void onCleared() {
+        compositeDisposable.clear();
+        super.onCleared();
     }
 
     public LiveData<Boolean> editEnabled() {
@@ -49,11 +58,11 @@ public class ChatViewModel extends AndroidViewModel {
 
     @SuppressLint("MissingPermission")
     public void setSchool(School school) {
-        this.selectedSchool = school;
         editEnabled.setValue(false);
-        schoolMessages = LiveDataReactiveStreams.fromPublisher(repository.setSchool(school)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+        schoolMessages = LiveDataReactiveStreams.fromPublisher(
+                repository.schoolMessages(school)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
         );
 
         if (PermissionUtil.hasLocationPermissions(getApplication())) {
@@ -82,8 +91,18 @@ public class ChatViewModel extends AndroidViewModel {
         return schoolMessages;
     }
 
-    public void sendMessage(String message){
-        
+    @SuppressLint("MissingPermission")
+    public void sendMessage(String message) {
+        final Disposable subscribe = reactiveLocationProvider.getLastKnownLocation()
+                .firstOrError()
+                .flatMapCompletable(location -> {
+                    final String uid = FirebaseAuth.getInstance().getUid();
+                    return repository.postMessage(uid, message, location);
+                })
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe();
+        compositeDisposable.add(subscribe);
 
 
 

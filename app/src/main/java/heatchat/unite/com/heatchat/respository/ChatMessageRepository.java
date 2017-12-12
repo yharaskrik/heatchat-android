@@ -1,10 +1,11 @@
 package heatchat.unite.com.heatchat.respository;
 
+import android.arch.lifecycle.MediatorLiveData;
+import android.arch.lifecycle.MutableLiveData;
 import android.arch.persistence.room.Room;
 import android.content.Context;
-import android.os.AsyncTask;
+import android.location.Location;
 import android.support.annotation.WorkerThread;
-import android.util.Log;
 
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -13,59 +14,73 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import heatchat.unite.com.heatchat.AppDatabase;
+import heatchat.unite.com.heatchat.dao.ChatMessageDao;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Notification;
+import timber.log.Timber;
 
 /**
- * Created by Andrew on 12/10/2017.
+ * Manages receiving and sending messages to a school.
  */
 
-public class ChatMessageRepository implements ChildEventListener {
+public class ChatMessageRepository {
 
     private static AppDatabase db;
     private final DatabaseReference schoolMessagesDB;
+    private final ChatMessageDao chatMessageDao;
     private School currentSchool;
+    private Executor daoExecutor;
+
+    private ChildEventListener chatMessageListener = new ChildEventListener() {
+
+        @Override
+        public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+            Timber.d("Got a message");
+            ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
+            if (cm != null) {
+                cm.setPath(currentSchool.getPath());
+                cm.setMessageID(dataSnapshot.getKey());
+                daoExecutor.execute(() -> chatMessageDao.insertAll(cm));
+            }
+        }
+
+        @Override
+        public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
+
+        }
+    };
 
     public ChatMessageRepository(Context context) {
         db = Room.databaseBuilder(context,
                 AppDatabase.class, "heatchat-message-db").fallbackToDestructiveMigration().build();
         schoolMessagesDB = FirebaseDatabase.getInstance().getReference().child("schoolMessages");
-    }
-
-    @Override
-    public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-        Log.d("ChatMessageRepository", "Got a message");
-        ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
-        if (cm != null) {
-            cm.setPath(currentSchool.getPath());
-            cm.setMessageID(dataSnapshot.getKey());
-            new SaveMessageTask().execute(cm);
-        }
-    }
-
-    @Override
-    public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-    }
-
-    @Override
-    public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-    }
-
-    @Override
-    public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-    }
-
-    @Override
-    public void onCancelled(DatabaseError databaseError) {
-
+        daoExecutor = Executors.newSingleThreadExecutor();
+        chatMessageDao = db.chatMessageDao();
     }
 
     /**
@@ -77,24 +92,51 @@ public class ChatMessageRepository implements ChildEventListener {
      * @param school The school to subscribe to.
      * @return A Flowable list that passes the updates list of chat messages when it updates.
      */
-    public Flowable<List<ChatMessage>> setSchool(School school) {
-        currentSchool = school;
+    public Flowable<List<ChatMessage>> schoolMessages(School school) {
         return db.chatMessageDao().loadMessagesByPath(school.getPath())
-                .doOnSubscribe(subscription -> addFirebaseChildUpdates(school))
+                .doOnSubscribe(subscription -> {
+                    if (currentSchool != null) {
+                        clearSchool(currentSchool);
+                    }
+                    currentSchool = school;
+                    addFirebaseChildUpdates(school);
+                })
                 .doOnEach(this::checkAndClearOldMessages)
-                .doFinally(() -> removeFirebaseChildUpdates(school));
+                .doFinally(() -> clearSchool(school));
     }
+
+
+    public Completable postMessage(String uid, String body, Location location) {
+        return Completable.fromAction(() -> {
+            ChatMessage message = new ChatMessage(uid, body, location.getLatitude(),
+                    location.getLongitude());
+            Map<String, Object> postValues = message.toMap();
+
+            String key = schoolMessagesDB
+                    .child(currentSchool.getPath())
+                    .child("messages").push().getKey();
+
+            Map<String, Object> childUpdates = new HashMap<>();
+            childUpdates.put(
+                    currentSchool.getPath() + "/messages/" + key,
+                    postValues);
+
+            schoolMessagesDB.updateChildren(childUpdates);
+        });
+    }
+
 
     /**
      * Removes the update subscription from the school.
      *
      * @param school The school to remove the child event listener from.
      */
-    private void removeFirebaseChildUpdates(School school) {
-        Log.d("ChatMessageRepository", "Clearing listener for " + school.getPath());
+    private void clearSchool(School school) {
+        Timber.d("Clearing listener for %s", school.getPath());
         schoolMessagesDB.child(school.getPath())
                 .child("messages")
-                .removeEventListener(ChatMessageRepository.this);
+                .removeEventListener(chatMessageListener);
+        currentSchool = null;
     }
 
     /**
@@ -108,11 +150,12 @@ public class ChatMessageRepository implements ChildEventListener {
     private void checkAndClearOldMessages(Notification<List<ChatMessage>> chatMessages) {
         final List<ChatMessage> value = chatMessages.getValue();
         if (value.size() > 10) {
-            Log.d("ChatMessageRepository", "List is at the maximum size");
+            Timber.d("List is at the maximum size");
             final ChatMessage chatMessage = value.get(value.size() - 11);
-            Log.d("ChatMessageRepository", chatMessage.toString() + " " + chatMessage.getTime());
-            db.chatMessageDao()
-                    .deleteOldMessages(chatMessage.getPath(), chatMessage.getTime());
+            Timber.d(chatMessage.toString() + " " + chatMessage.getTime());
+            daoExecutor.execute(() ->
+                    chatMessageDao.deleteOldMessages(chatMessage.getPath(), chatMessage.getTime())
+            );
         }
     }
 
@@ -126,28 +169,16 @@ public class ChatMessageRepository implements ChildEventListener {
      */
     @WorkerThread
     private void addFirebaseChildUpdates(School school) {
-        if (currentSchool.getPath().equals(school.getPath())) {
-            Query query = schoolMessagesDB
-                    .child(currentSchool.getPath())
-                    .child("messages")
-                    .orderByChild("time");
-            final ChatMessage lastMessage = db.chatMessageDao().getLastMessage(school.getPath());
-            if (lastMessage != null) {
-                query = query.startAt(lastMessage.getTime());
-            }
-            query.addChildEventListener(this);
-            Log.d("ChatMessageRepository", "Subscribed to " + school.getPath());
+        Query query = schoolMessagesDB
+                .child(school.getPath())
+                .child("messages")
+                .orderByChild("time");
+        final ChatMessage lastMessage = chatMessageDao.getLastMessage(school.getPath());
+        if (lastMessage != null) {
+            query = query.startAt(lastMessage.getTime());
         }
+        query.addChildEventListener(chatMessageListener);
+        Timber.d("Subscribed to %s", school.getPath());
     }
 
-    /**
-     * AsyncTask to save a message to the database.
-     */
-    private static class SaveMessageTask extends AsyncTask<ChatMessage, Void, Integer> {
-        @Override
-        protected Integer doInBackground(ChatMessage... messages) {
-            db.chatMessageDao().insertAll(messages);
-            return 1;
-        }
-    }
 }
