@@ -12,14 +12,21 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import heatchat.unite.com.heatchat.models.School;
 
 /**
+ * TODO: Move code to use case class
  * Created by Andrew on 12/10/2017.
  */
 
 public class SchoolListViewModel extends ViewModel {
     MutableLiveData<List<School>> schools = new MutableLiveData<>();
+
+    @Inject
+    public SchoolListViewModel() {
+    }
 
     public LiveData<List<School>> getSchools() {
         if (schools.getValue() == null) {

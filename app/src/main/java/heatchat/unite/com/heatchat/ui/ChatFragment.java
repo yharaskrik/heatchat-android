@@ -1,5 +1,6 @@
 package heatchat.unite.com.heatchat.ui;
 
+import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -16,16 +17,17 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
 import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
+import heatchat.unite.com.heatchat.di.Injectable;
 import heatchat.unite.com.heatchat.models.ChatMessage;
-import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.viewmodel.ChatViewModel;
-import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 import timber.log.Timber;
 
 /**
@@ -36,9 +38,11 @@ import timber.log.Timber;
  * Use the {@link ChatFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class ChatFragment extends Fragment {
+public class ChatFragment extends Fragment implements Injectable {
 
     private static int maxMessages = 100;
+    @Inject
+    ViewModelProvider.Factory viewModelFactory;
     @BindView(R.id.list_of_messages)
     RecyclerView recyclerView;
     @BindView(R.id.button_chatbox_send)
@@ -80,18 +84,26 @@ public class ChatFragment extends Fragment {
         super.onCreate(savedInstanceState);
         dataset = new ArrayList<>();
         messageAdapter = new ChatMessageAdapter();
+    }
 
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
         // Acquire the view models.
-        chatViewModel = ViewModelProviders.of(this).get(ChatViewModel.class);
+        chatViewModel = ViewModelProviders.of(this, viewModelFactory).get(ChatViewModel.class);
 
         chatViewModel.editEnabled().observe(this, this::setEditingEnabled);
 
-        // Acquire the shared view model to listen to the changing school.
-        ViewModelProviders.of(getActivity())
-                .get(SharedViewModel.class)
-                .getSelectedSchool()
-                .observe(this, this::changeSchool);
-
+        chatViewModel.messageList().observe(this, chatMessages -> {
+            if (chatMessages == null) {
+                messageAdapter.onNewData(new ArrayList<>());
+                showEmptyIfEmpty(0);
+            } else {
+                Timber.d("Got message list size: %s", chatMessages.size());
+                messageAdapter.onNewData(new ArrayList<>(chatMessages));
+                showEmptyIfEmpty(chatMessages.size());
+            }
+        });
     }
 
     @Override
@@ -145,24 +157,6 @@ public class ChatFragment extends Fragment {
             input.setHint(R.string.not_close_hint);
             mSubmitButton.setVisibility(View.GONE);
         }
-    }
-
-    private void changeSchool(School school) {
-        // Clean up the previous messages
-        chatViewModel.getSchoolMessages().removeObservers(this);
-        messageAdapter.onNewData(new ArrayList<>());
-        // Set the new school and start observing again
-        chatViewModel.setSchool(school);
-        chatViewModel.getSchoolMessages().observe(this, chatMessages -> {
-            if (chatMessages == null) {
-                messageAdapter.onNewData(new ArrayList<>());
-                showEmptyIfEmpty(0);
-            } else {
-                Timber.d("Got message list size: " + chatMessages.size());
-                messageAdapter.onNewData(new ArrayList<>(chatMessages));
-                showEmptyIfEmpty(chatMessages.size());
-            }
-        });
     }
 
     private void showEmptyIfEmpty(int count) {

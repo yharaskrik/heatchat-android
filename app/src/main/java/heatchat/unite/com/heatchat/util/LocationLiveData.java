@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Looper;
+import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 
@@ -32,7 +33,7 @@ public class LocationLiveData extends LiveData<Location> {
         }
     };
 
-    public LocationLiveData(Context context) {
+    private LocationLiveData(Context context) {
         this.context = context;
     }
 

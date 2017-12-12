@@ -1,9 +1,5 @@
 package heatchat.unite.com.heatchat.respository;
 
-import android.arch.lifecycle.MediatorLiveData;
-import android.arch.lifecycle.MutableLiveData;
-import android.arch.persistence.room.Room;
-import android.content.Context;
 import android.location.Location;
 import android.support.annotation.WorkerThread;
 
@@ -20,7 +16,9 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import heatchat.unite.com.heatchat.AppDatabase;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import heatchat.unite.com.heatchat.dao.ChatMessageDao;
 import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.models.School;
@@ -32,15 +30,28 @@ import timber.log.Timber;
 /**
  * Manages receiving and sending messages to a school.
  */
-
+@Singleton
 public class ChatMessageRepository {
 
-    private static AppDatabase db;
+    /**
+     * Reference to the school message list firebase database
+     */
     private final DatabaseReference schoolMessagesDB;
+
+    /**
+     * The Room ChatMessageDao to save the messages into.
+     */
     private final ChatMessageDao chatMessageDao;
-    private School currentSchool;
     private Executor daoExecutor;
 
+    /**
+     * Keeps track of the current school.
+     */
+    private School currentSchool;
+
+    /**
+     * ChildEventListener that will save the message into the database.
+     */
     private ChildEventListener chatMessageListener = new ChildEventListener() {
 
         @Override
@@ -75,12 +86,11 @@ public class ChatMessageRepository {
         }
     };
 
-    public ChatMessageRepository(Context context) {
-        db = Room.databaseBuilder(context,
-                AppDatabase.class, "heatchat-message-db").fallbackToDestructiveMigration().build();
-        schoolMessagesDB = FirebaseDatabase.getInstance().getReference().child("schoolMessages");
+    @Inject
+    public ChatMessageRepository(ChatMessageDao chatMessageDao) {
+        this.chatMessageDao = chatMessageDao;
+        schoolMessagesDB = FirebaseDatabase.getInstance().getReference().child("setSchool");
         daoExecutor = Executors.newSingleThreadExecutor();
-        chatMessageDao = db.chatMessageDao();
     }
 
     /**
@@ -92,17 +102,14 @@ public class ChatMessageRepository {
      * @param school The school to subscribe to.
      * @return A Flowable list that passes the updates list of chat messages when it updates.
      */
-    public Flowable<List<ChatMessage>> schoolMessages(School school) {
-        return db.chatMessageDao().loadMessagesByPath(school.getPath())
+    public Flowable<List<ChatMessage>> setSchool(School school) {
+        return chatMessageDao.loadMessagesByPath(school.getPath())
                 .doOnSubscribe(subscription -> {
-                    if (currentSchool != null) {
-                        clearSchool(currentSchool);
-                    }
                     currentSchool = school;
                     addFirebaseChildUpdates(school);
                 })
                 .doOnEach(this::checkAndClearOldMessages)
-                .doFinally(() -> clearSchool(school));
+                .doFinally(() -> clearSchoolUpdates(school));
     }
 
 
@@ -131,12 +138,11 @@ public class ChatMessageRepository {
      *
      * @param school The school to remove the child event listener from.
      */
-    private void clearSchool(School school) {
+    private void clearSchoolUpdates(School school) {
         Timber.d("Clearing listener for %s", school.getPath());
         schoolMessagesDB.child(school.getPath())
                 .child("messages")
                 .removeEventListener(chatMessageListener);
-        currentSchool = null;
     }
 
     /**
@@ -180,5 +186,6 @@ public class ChatMessageRepository {
         query.addChildEventListener(chatMessageListener);
         Timber.d("Subscribed to %s", school.getPath());
     }
+
 
 }

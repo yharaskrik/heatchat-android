@@ -1,5 +1,6 @@
 package heatchat.unite.com.heatchat.ui;
 
+import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.net.Uri;
@@ -12,11 +13,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import javax.inject.Inject;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.Unbinder;
 import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.SchoolListAdapter;
+import heatchat.unite.com.heatchat.di.Injectable;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.viewmodel.SchoolListViewModel;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
@@ -29,7 +33,10 @@ import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
  * Use the {@link SchoolListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class SchoolListFragment extends Fragment {
+public class SchoolListFragment extends Fragment implements Injectable {
+
+    @Inject
+    ViewModelProvider.Factory viewModelFactory;
 
     @BindView(R.id.school_list_recycler)
     RecyclerView schoolList;
@@ -60,12 +67,18 @@ public class SchoolListFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         adapter = new SchoolListAdapter();
-        schoolListViewModel = ViewModelProviders.of(this)
+        adapter.setClickListener(this::changeSchool);
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        schoolListViewModel = ViewModelProviders.of(this, viewModelFactory)
                 .get(SchoolListViewModel.class);
-        sharedViewModel = ViewModelProviders.of(getActivity())
+        sharedViewModel = ViewModelProviders.of(getActivity(), viewModelFactory)
                 .get(SharedViewModel.class);
         schoolListViewModel.getSchools().observe(this, schools -> adapter.setSchools(schools));
-        adapter.setClickListener(this::changeSchool);
+
     }
 
     @Override

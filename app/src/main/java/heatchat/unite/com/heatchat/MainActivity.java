@@ -1,6 +1,7 @@
 package heatchat.unite.com.heatchat;
 
 import android.Manifest;
+import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -8,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -28,8 +30,13 @@ import com.google.firebase.database.DatabaseReference;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import dagger.android.AndroidInjector;
+import dagger.android.DispatchingAndroidInjector;
+import dagger.android.support.HasSupportFragmentInjector;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.ui.ChatFragment;
 import heatchat.unite.com.heatchat.ui.SchoolListFragment;
@@ -38,10 +45,15 @@ import io.reactivex.disposables.Disposable;
 import pl.charmas.android.reactivelocation2.ReactiveLocationProvider;
 import timber.log.Timber;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements HasSupportFragmentInjector {
 
     private static final int ACCESS_FINE_LOCATION_CODE = 104;
     private static int maxMessages = 100;
+    @Inject
+    DispatchingAndroidInjector<Fragment> dispatchingAndroidInjector;
+
+    @Inject
+    ViewModelProvider.Factory viewModelFactory;
 
     @BindView(R.id.textViewTitle)
     TextView toolbarTitle;
@@ -120,6 +132,11 @@ public class MainActivity extends AppCompatActivity {
         getLocation();
     }
 
+    @Override
+    public AndroidInjector<Fragment> supportFragmentInjector() {
+        return dispatchingAndroidInjector;
+    }
+
     /**
      * Waits for the view model to get the user
      */
@@ -182,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initializeViewModels() {
-        sharedViewModel = ViewModelProviders.of(this)
+        sharedViewModel = ViewModelProviders.of(this, viewModelFactory)
                 .get(SharedViewModel.class);
         sharedViewModel.getSelectedSchool().observe(this, this::changeSchool);
     }

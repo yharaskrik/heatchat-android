@@ -81,6 +81,7 @@ dependencies {
 
 
     annotationProcessor "com.google.dagger:dagger-compiler:$daggerVersion"
+    annotationProcessor "com.google.dagger:dagger-android-processor:$daggerVersion"
     compile "com.google.dagger:dagger-android-support:$daggerVersion"
     compile "com.google.dagger:dagger:$daggerVersion"
 }

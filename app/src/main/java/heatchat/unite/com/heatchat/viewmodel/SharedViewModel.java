@@ -7,6 +7,9 @@ import android.arch.lifecycle.ViewModel;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import javax.inject.Inject;
+
+import heatchat.unite.com.heatchat.models.CurrentSchool;
 import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.util.LiveDataResult;
 import timber.log.Timber;
@@ -17,8 +20,13 @@ import timber.log.Timber;
 
 public class SharedViewModel extends ViewModel {
 
-    private final MutableLiveData<School> selectedSchool = new MutableLiveData<>();
     private final MutableLiveData<LiveDataResult<FirebaseUser>> user = new MutableLiveData<>();
+    private MutableLiveData<School> selectedSchool;
+
+    @Inject
+    public SharedViewModel(CurrentSchool currentSchool) {
+        selectedSchool = currentSchool;
+    }
 
     public void select(School school) {
         selectedSchool.setValue(school);
