@@ -65,4 +65,13 @@ public class SharedViewModel extends ViewModel {
         }
         return user;
     }
+
+    /**
+     * Starts the LocationTracking if there are already active observers.
+     */
+    public void setLocationPermissionsEnabled() {
+        if (locationLiveData.hasActiveObservers()) {
+            locationLiveData.startTrackingUpdates();
+        }
+    }
 }

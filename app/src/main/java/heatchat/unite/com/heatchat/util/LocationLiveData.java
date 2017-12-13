@@ -43,14 +43,26 @@ public class LocationLiveData extends LiveData<Location> {
     };
 
     @Inject
-    public LocationLiveData(Application app) {
+    LocationLiveData(Application app) {
         this.context = app.getApplicationContext();
-//        init();
+        init();
     }
 
     @Override
     protected void onActive() {
         super.onActive();
+        startTrackingUpdates();
+    }
+
+    @Override
+    protected void onInactive() {
+        if (fusedLocationProviderClient != null) {
+            Timber.d("Stopping Location tracking");
+            fusedLocationProviderClient.removeLocationUpdates(locationCallback);
+        }
+    }
+
+    public void startTrackingUpdates() {
         if (ActivityCompat.checkSelfPermission(context,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(context,
@@ -66,14 +78,6 @@ public class LocationLiveData extends LiveData<Location> {
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         Looper looper = Looper.getMainLooper();
         locationProviderClient.requestLocationUpdates(locationRequest, locationCallback, looper);
-    }
-
-    @Override
-    protected void onInactive() {
-        if (fusedLocationProviderClient != null) {
-            Timber.d("Stopping Location tracking");
-            fusedLocationProviderClient.removeLocationUpdates(locationCallback);
-        }
     }
 
     @SuppressLint("MissingPermission")
