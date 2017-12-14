@@ -6,7 +6,6 @@ import android.arch.lifecycle.ViewModelProviders;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -26,11 +25,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -43,7 +37,7 @@ import heatchat.unite.com.heatchat.models.School;
 import heatchat.unite.com.heatchat.ui.ChatFragment;
 import heatchat.unite.com.heatchat.ui.SchoolListFragment;
 import heatchat.unite.com.heatchat.util.PermissionUtil;
-import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
+import heatchat.unite.com.heatchat.viewmodel.MainActivityViewModel;
 import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity implements HasSupportFragmentInjector {
@@ -67,37 +61,48 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
 
     private FirebaseAnalytics mFirebaseAnaltyics;
     private ActionBarDrawerToggle mDrawerToggle;
-    private DatabaseReference mDatabase;
-    private SharedViewModel sharedViewModel;
-
-    private boolean isLoggedIn = false;
+    private MainActivityViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
-
         mFirebaseAnaltyics = FirebaseAnalytics.getInstance(this);
 
-        sharedViewModel = ViewModelProviders.of(this, viewModelFactory)
-                .get(SharedViewModel.class);
-        sharedViewModel.getSelectedSchool().observe(this, this::changeSchool);
-
-        mDatabase = FirebaseDatabase.getInstance().getReference();
+        viewModel = ViewModelProviders.of(this, viewModelFactory)
+                .get(MainActivityViewModel.class);
 
         setUpActionBar();
-
         initializeDrawer();
-
 
         checkLocationPermissions();
 
-        checkAuth();
+        viewModel.getUser().observe(this, userResult -> {
+            if (userResult == null || (!userResult.isLoggedIn() && userResult.getException() != null)) {
+                Timber.e("Could not login!");
+                showAuthError();
+            } else if (userResult.isLoggedIn()) {
+                Timber.d("User is logged in");
+                Toast.makeText(this,
+                        "Welcome",
+                        Toast.LENGTH_LONG)
+                        .show();
+            } else {
+                Timber.d("Not logged in");
+            }
+        });
 
         if (savedInstanceState == null) {
-            setUpFragmentsIfAllConfigured();
+            setUpFragments();
         }
+
+        viewModel.currentSchool().observe(this, this::changeSchool);
+
+        viewModel.locationUpdates()
+                .observe(this, location -> Timber.d("Got a new location %s", location));
+
+
     }
 
     @Override
@@ -106,7 +111,6 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == ACCESS_FINE_LOCATION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                sharedViewModel.setLocationPermissionsEnabled();
                 initializeLocation();
             }
         }
@@ -114,11 +118,7 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (mDrawerToggle.onOptionsItemSelected(item)) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        return mDrawerToggle.onOptionsItemSelected(item) || super.onOptionsItemSelected(item);
 
     }
 
@@ -145,29 +145,6 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
-    /**
-     * Waits for the view model to get the user
-     * <p>
-     * TODO: Move to repository
-     */
-    private void checkAuth() {
-        sharedViewModel.getUser().observe(this, result -> {
-            if (result != null) {
-                if (result.isSuccess() && result.getResult() != null) {
-                    Toast.makeText(this,
-                            "Welcome " + result.getResult().getDisplayName(),
-                            Toast.LENGTH_LONG)
-                            .show();
-                    isLoggedIn = true;
-                    setUpFragmentsIfAllConfigured();
-                } else {
-                    sharedViewModel.getUser().removeObservers(MainActivity.this);
-                    showAuthError();
-                }
-            }
-        });
-    }
-
     private void showAuthError() {
         AlertDialog.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -180,7 +157,7 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
                 .setMessage(
                         "Authentication to Heatchat servers failed. Press ok to try again.")
                 .setPositiveButton(android.R.string.ok,
-                        (dialog, which) -> checkAuth())
+                        (dialog, which) -> viewModel.retryLogin())
                 .setNegativeButton(android.R.string.no, (dialog, which) -> {
                     // do nothing
                 })
@@ -188,16 +165,14 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
                 .show();
     }
 
-    private void setUpFragmentsIfAllConfigured() {
-        if (isLoggedIn) {
-            if (getSupportFragmentManager().findFragmentById(R.id.main_container) == null) {
-                getSupportFragmentManager()
-                        .beginTransaction()
-                        .add(R.id.school_list_container,
-                                SchoolListFragment.newInstance(), "SchoolListFragment")
-                        .add(R.id.main_container, ChatFragment.newInstance(), "ChatFragment")
-                        .commit();
-            }
+    private void setUpFragments() {
+        if (getSupportFragmentManager().findFragmentById(R.id.main_container) == null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .add(R.id.school_list_container,
+                            SchoolListFragment.newInstance(), "SchoolListFragment")
+                    .add(R.id.main_container, ChatFragment.newInstance(), "ChatFragment")
+                    .commit();
         }
     }
 
@@ -208,28 +183,6 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
 //            actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setDisplayShowTitleEnabled(false);
         }
-    }
-
-    /**
-     * Sends the user's location to the Firebase Database.
-     * //TODO: Change to a repository and move to view model.
-     *
-     * @param location The new location.
-     */
-    private void sendLocation(Location location) {
-        String key = mDatabase
-                .child("/user/locations/").push().getKey();
-
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("lat", location.getLatitude());
-        hashMap.put("lon", location.getLongitude());
-        hashMap.put("uid", sharedViewModel.getUser().getValue().getResult().getUid());
-
-        Map<String, Object> childUpdates = new HashMap<>();
-        childUpdates.put("/user/locations/" + key, hashMap);
-
-        mDatabase.updateChildren(childUpdates);
-        Timber.d("Sent Location");
     }
 
     private void initializeDrawer() {
@@ -260,8 +213,7 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
     }
 
     private void initializeLocation() {
-        sharedViewModel.locationUpdates().removeObservers(this);
-        sharedViewModel.locationUpdates().observe(this, this::sendLocation);
+        viewModel.startLocation();
     }
 
     /**

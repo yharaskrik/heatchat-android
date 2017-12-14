@@ -1,6 +1,5 @@
 package heatchat.unite.com.heatchat.adapters;
 
-import android.content.Context;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -38,7 +37,9 @@ public class ChatMessageAdapter extends RecyclerView.Adapter {
     @Override
     public int getItemViewType(int position) {
         ChatMessage message = chatMessages.get(position);
-
+        if (message.getUid() == null) {
+            return VIEW_TYPE_MESSAGE_RECEIVED;
+        }
         if (message.getUid().equals(FirebaseAuth.getInstance().getUid())) {
             return VIEW_TYPE_MESSAGE_SENT;
         } else {

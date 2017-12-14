@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,6 +34,7 @@ import timber.log.Timber;
 @Singleton
 public class ChatMessageRepository {
 
+    private static final int MAX_MESSAGES = 30;
     /**
      * Reference to the school message list firebase database
      */
@@ -56,7 +58,7 @@ public class ChatMessageRepository {
 
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            Timber.d("Got a message");
+            Timber.d("Got a message: %s", dataSnapshot.toString());
             ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
             if (cm != null) {
                 cm.setPath(currentSchool.getPath());
@@ -72,7 +74,14 @@ public class ChatMessageRepository {
 
         @Override
         public void onChildRemoved(DataSnapshot dataSnapshot) {
-
+            // Handle removing messages that are too old.
+            Timber.d("Removing %s", dataSnapshot.toString());
+            ChatMessage cm = dataSnapshot.getValue(ChatMessage.class);
+            if (cm != null) {
+                daoExecutor.execute(
+                        () -> chatMessageDao.deleteOldMessage(currentSchool.getPath(),
+                                cm.getTime()));
+            }
         }
 
         @Override
@@ -82,14 +91,14 @@ public class ChatMessageRepository {
 
         @Override
         public void onCancelled(DatabaseError databaseError) {
-
+            Timber.e("Error connecting to DB %s", databaseError.toString());
         }
     };
 
     @Inject
     public ChatMessageRepository(ChatMessageDao chatMessageDao) {
         this.chatMessageDao = chatMessageDao;
-        schoolMessagesDB = FirebaseDatabase.getInstance().getReference().child("setSchool");
+        schoolMessagesDB = FirebaseDatabase.getInstance().getReference().child("schoolMessages");
         daoExecutor = Executors.newSingleThreadExecutor();
     }
 
@@ -104,10 +113,13 @@ public class ChatMessageRepository {
      */
     public Flowable<List<ChatMessage>> setSchool(School school) {
         return chatMessageDao.loadMessagesByPath(school.getPath())
+                .debounce(200, TimeUnit.MILLISECONDS)
                 .doOnSubscribe(subscription -> {
                     currentSchool = school;
                     addFirebaseChildUpdates(school);
                 })
+                // Handle if the list is too big. Note that this can happen if the system resumes and there have been 100 more messages as they will not be deleted.
+
                 .doOnEach(this::checkAndClearOldMessages)
                 .doFinally(() -> clearSchoolUpdates(school));
     }
@@ -127,7 +139,7 @@ public class ChatMessageRepository {
             childUpdates.put(
                     currentSchool.getPath() + "/messages/" + key,
                     postValues);
-
+            Timber.d("Sending %s", childUpdates.toString());
             schoolMessagesDB.updateChildren(childUpdates);
         });
     }
@@ -146,18 +158,17 @@ public class ChatMessageRepository {
     }
 
     /**
-     * Checks that the list of chat messages is the maximum size, if so then it removes all chat
-     * messages from the school from the database that are older than the oldest message in the
-     * list.
+     * Checks if the list of chat messages is above maximum size, if so then it removes all chat
+     * messages from the school that are older than the allowed amount.
      *
      * @param chatMessages The list of chat messages to check.
      */
     @WorkerThread
     private void checkAndClearOldMessages(Notification<List<ChatMessage>> chatMessages) {
         final List<ChatMessage> value = chatMessages.getValue();
-        if (value.size() > 10) {
-            Timber.d("List is at the maximum size");
-            final ChatMessage chatMessage = value.get(value.size() - 11);
+        if (value.size() > MAX_MESSAGES) {
+            Timber.d("List is at the maximum size, remove old items");
+            final ChatMessage chatMessage = value.get(value.size() - MAX_MESSAGES - 1);
             Timber.d(chatMessage.toString() + " " + chatMessage.getTime());
             daoExecutor.execute(() ->
                     chatMessageDao.deleteOldMessages(chatMessage.getPath(), chatMessage.getTime())
@@ -178,11 +189,8 @@ public class ChatMessageRepository {
         Query query = schoolMessagesDB
                 .child(school.getPath())
                 .child("messages")
-                .orderByChild("time");
-        final ChatMessage lastMessage = chatMessageDao.getLastMessage(school.getPath());
-        if (lastMessage != null) {
-            query = query.startAt(lastMessage.getTime());
-        }
+                .orderByChild("time")
+                .limitToLast(MAX_MESSAGES);
         query.addChildEventListener(chatMessageListener);
         Timber.d("Subscribed to %s", school.getPath());
     }

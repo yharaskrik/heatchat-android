@@ -37,4 +37,7 @@ public interface ChatMessageDao {
 
     @Query("DELETE FROM chatmessage WHERE path = :path and time < :time")
     void deleteOldMessages(String path, long time);
+
+    @Query("DELETE FROM chatmessage WHERE path = :path and time <= :time")
+    void deleteOldMessage(String path, long time);
 }

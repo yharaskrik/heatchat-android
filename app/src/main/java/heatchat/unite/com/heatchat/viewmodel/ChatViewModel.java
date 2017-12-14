@@ -151,9 +151,10 @@ public class ChatViewModel extends AndroidViewModel {
     public void sendMessage(String message) {
         final Location location = locationLiveData.getValue();
         final Boolean sendingEnabledValue = sendingEnabled.getValue();
-        if (sendingEnabledValue != null && sendingEnabledValue && location != null) {
+        final String uid = FirebaseAuth.getInstance().getUid();
+        if (sendingEnabledValue != null && sendingEnabledValue && location != null && uid != null) {
             compositeDisposable.add(
-                    repository.postMessage(FirebaseAuth.getInstance().getUid(), message, location)
+                    repository.postMessage(uid, message, location)
                             .subscribeOn(Schedulers.io())
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe());
