@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.ui;
+package heatchat.unite.com.heatchat.ui.chat;
 
 import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
@@ -23,9 +23,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.Unbinder;
 import heatchat.unite.com.heatchat.R;
-import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.di.Injectable;
-import heatchat.unite.com.heatchat.viewmodel.ChatViewModel;
 import timber.log.Timber;
 
 /**

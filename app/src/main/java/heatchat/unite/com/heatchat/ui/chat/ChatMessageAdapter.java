@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.adapters;
+package heatchat.unite.com.heatchat.ui.chat;
 
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;

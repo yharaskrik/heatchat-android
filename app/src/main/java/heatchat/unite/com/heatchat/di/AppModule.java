@@ -9,8 +9,8 @@ import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
-import heatchat.unite.com.heatchat.AppDatabase;
-import heatchat.unite.com.heatchat.dao.ChatMessageDao;
+import heatchat.unite.com.heatchat.db.AppDatabase;
+import heatchat.unite.com.heatchat.db.ChatMessageDao;
 
 /**
  * App Module to initialize app wide dependencies that require special handling.

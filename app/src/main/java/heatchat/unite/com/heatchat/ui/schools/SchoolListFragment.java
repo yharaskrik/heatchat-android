@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.ui;
+package heatchat.unite.com.heatchat.ui.schools;
 
 import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
@@ -22,7 +22,6 @@ import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.SchoolListAdapter;
 import heatchat.unite.com.heatchat.di.Injectable;
 import heatchat.unite.com.heatchat.models.School;
-import heatchat.unite.com.heatchat.viewmodel.SchoolListViewModel;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 
 /**

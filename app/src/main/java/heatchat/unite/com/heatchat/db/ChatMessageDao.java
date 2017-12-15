@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.dao;
+package heatchat.unite.com.heatchat.db;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;

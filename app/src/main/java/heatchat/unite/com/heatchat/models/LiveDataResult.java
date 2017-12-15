@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.util;
+package heatchat.unite.com.heatchat.models;
 
 import javax.annotation.Nullable;
 

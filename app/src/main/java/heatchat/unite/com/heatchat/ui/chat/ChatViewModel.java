@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.viewmodel;
+package heatchat.unite.com.heatchat.ui.chat;
 
 import android.annotation.SuppressLint;
 import android.app.Application;

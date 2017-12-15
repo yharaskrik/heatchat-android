@@ -1,4 +1,4 @@
-package heatchat.unite.com.heatchat.viewmodel;
+package heatchat.unite.com.heatchat.ui.schools;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;

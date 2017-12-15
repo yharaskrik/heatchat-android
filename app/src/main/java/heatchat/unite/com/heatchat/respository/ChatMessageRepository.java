@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import heatchat.unite.com.heatchat.dao.ChatMessageDao;
+import heatchat.unite.com.heatchat.db.ChatMessageDao;
 import heatchat.unite.com.heatchat.db.ChildEventLiveData.ChildEvent;
 import heatchat.unite.com.heatchat.db.HeatChatFirebaseDB;
 import heatchat.unite.com.heatchat.models.ChatMessage;

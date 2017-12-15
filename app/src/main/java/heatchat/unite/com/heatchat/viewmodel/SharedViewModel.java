@@ -11,7 +11,7 @@ import javax.inject.Inject;
 
 import heatchat.unite.com.heatchat.models.CurrentSchool;
 import heatchat.unite.com.heatchat.models.School;
-import heatchat.unite.com.heatchat.util.LiveDataResult;
+import heatchat.unite.com.heatchat.models.LiveDataResult;
 import heatchat.unite.com.heatchat.util.LocationLiveData;
 import timber.log.Timber;
 

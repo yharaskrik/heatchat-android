@@ -6,10 +6,10 @@ import android.arch.lifecycle.ViewModelProvider;
 import dagger.Binds;
 import dagger.Module;
 import dagger.multibindings.IntoMap;
-import heatchat.unite.com.heatchat.viewmodel.ChatViewModel;
+import heatchat.unite.com.heatchat.ui.chat.ChatViewModel;
 import heatchat.unite.com.heatchat.viewmodel.DaggerViewModelFactory;
 import heatchat.unite.com.heatchat.viewmodel.MainActivityViewModel;
-import heatchat.unite.com.heatchat.viewmodel.SchoolListViewModel;
+import heatchat.unite.com.heatchat.ui.schools.SchoolListViewModel;
 import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
 
 /**
