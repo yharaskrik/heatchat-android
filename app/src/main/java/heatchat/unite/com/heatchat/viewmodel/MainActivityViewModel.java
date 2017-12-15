@@ -26,8 +26,8 @@ public class MainActivityViewModel extends ViewModel {
 
 
     @Inject
-    public MainActivityViewModel(LocationLiveData locationLiveData, UserRepository userRepository,
-                                 CurrentSchool currentSchool) {
+    MainActivityViewModel(LocationLiveData locationLiveData, UserRepository userRepository,
+                          CurrentSchool currentSchool) {
         this.locationLiveData = locationLiveData;
         user = userRepository.getUser();
         this.userRepository = userRepository;

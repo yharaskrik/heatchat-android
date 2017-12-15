@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
-import android.arch.lifecycle.LiveDataReactiveStreams;
 import android.arch.lifecycle.MediatorLiveData;
 import android.arch.lifecycle.Transformations;
 import android.location.Location;
@@ -39,7 +38,9 @@ import timber.log.Timber;
  */
 public class ChatViewModel extends AndroidViewModel {
 
+    private final CurrentSchool currentSchool;
     private final LocationLiveData locationLiveData;
+
     /**
      * The repository for chat messages that provides the functionality to send and receive
      * messages.
@@ -65,10 +66,12 @@ public class ChatViewModel extends AndroidViewModel {
 
     @Inject
     ChatViewModel(@NonNull Application application,
-                  ChatMessageRepository chatMessageRepository, CurrentSchool currentSchool,
+                  ChatMessageRepository chatMessageRepository,
+                  CurrentSchool currentSchool,
                   LocationLiveData locationLiveData) {
         super(application);
         this.repository = chatMessageRepository;
+        this.currentSchool = currentSchool;
         this.locationLiveData = locationLiveData;
         sendingEnabled.setValue(false);
         initChatMessages(currentSchool);
@@ -90,11 +93,7 @@ public class ChatViewModel extends AndroidViewModel {
      */
     private void initChatMessages(CurrentSchool currentSchool) {
         messageList = Transformations.switchMap(currentSchool,
-                school -> LiveDataReactiveStreams.fromPublisher(
-                        repository.setSchool(school)
-                                .subscribeOn(Schedulers.io())
-                                .observeOn(AndroidSchedulers.mainThread())
-                ));
+                school -> repository.getSchoolMessages(school));
     }
 
     /**

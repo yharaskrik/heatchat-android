@@ -15,7 +15,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import javax.inject.Inject;
 
@@ -26,21 +25,19 @@ import butterknife.Unbinder;
 import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.ChatMessageAdapter;
 import heatchat.unite.com.heatchat.di.Injectable;
-import heatchat.unite.com.heatchat.models.ChatMessage;
 import heatchat.unite.com.heatchat.viewmodel.ChatViewModel;
 import timber.log.Timber;
 
 /**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link ChatFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link ChatFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * A simple {@link Fragment} that displays the list of chat messages for the current school and
+ * provides a send message button and text box to send a new message.
+ * <p>
+ * See {@link ChatViewModel} for details on how this fragment interacts with the data layer.
+ * <p>
+ * Use the {@link ChatFragment#newInstance} factory method to create an instance of this fragment.
  */
 public class ChatFragment extends Fragment implements Injectable {
 
-    private static int maxMessages = 100;
     @Inject
     ViewModelProvider.Factory viewModelFactory;
     @BindView(R.id.list_of_messages)
@@ -52,14 +49,10 @@ public class ChatFragment extends Fragment implements Injectable {
     @BindView(R.id.empty_view)
     TextView emptyView;
 
-    private List<ChatMessage> dataset;
-
     private ChatMessageAdapter messageAdapter;
 
     private Unbinder unbinder;
 
-    private Double latitude;
-    private Double longitude;
     private ChatViewModel chatViewModel;
 
     public ChatFragment() {
@@ -82,7 +75,6 @@ public class ChatFragment extends Fragment implements Injectable {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        dataset = new ArrayList<>();
         messageAdapter = new ChatMessageAdapter();
     }
 

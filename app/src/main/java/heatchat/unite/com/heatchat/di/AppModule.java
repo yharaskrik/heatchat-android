@@ -3,6 +3,8 @@ package heatchat.unite.com.heatchat.di;
 import android.app.Application;
 import android.arch.persistence.room.Room;
 
+import com.google.firebase.database.FirebaseDatabase;
+
 import javax.inject.Singleton;
 
 import dagger.Module;
@@ -26,8 +28,13 @@ class AppModule {
 
     @Singleton
     @Provides
-    ChatMessageDao provideChatMessageDao(AppDatabase appDatabase){
+    ChatMessageDao provideChatMessageDao(AppDatabase appDatabase) {
         return appDatabase.chatMessageDao();
     }
 
+    @Singleton
+    @Provides
+    FirebaseDatabase provideFirebaseDatabase() {
+        return FirebaseDatabase.getInstance();
+    }
 }

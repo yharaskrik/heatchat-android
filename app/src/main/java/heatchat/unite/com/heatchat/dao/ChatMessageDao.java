@@ -20,6 +20,9 @@ public interface ChatMessageDao {
     @Query("SELECT * FROM chatmessage WHERE path = :path ORDER BY time ASC")
     Flowable<List<ChatMessage>> loadMessagesByPath(String path);
 
+    @Query("SELECT * FROM chatmessage WHERE path = :schoolPath ORDER BY time ASC")
+    LiveData<List<ChatMessage>> schoolMessages(String schoolPath);
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertAll(ChatMessage... messages);
 
@@ -36,7 +39,7 @@ public interface ChatMessageDao {
     void delete(ChatMessage message);
 
     @Query("DELETE FROM chatmessage WHERE path = :path and time < :time")
-    void deleteOldMessages(String path, long time);
+    void deleteSchoolMessagesOlderThan(String path, long time);
 
     @Query("DELETE FROM chatmessage WHERE path = :path and time <= :time")
     void deleteOldMessage(String path, long time);
