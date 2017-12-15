@@ -1,5 +1,8 @@
 package heatchat.unite.com.heatchat.models;
 
+import android.arch.persistence.room.ColumnInfo;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.PrimaryKey;
 import android.support.annotation.NonNull;
 
 import com.google.firebase.database.Exclude;
@@ -9,21 +12,48 @@ import java.util.HashMap;
 import java.util.Map;
 
 @IgnoreExtraProperties
+@Entity(tableName = "school")
 public class School implements Comparable<School> {
 
+    @PrimaryKey
+    @NonNull
+    @ColumnInfo(name = "name", index = true)
     private String name;
-    private double lat, lon, distance;
+
+    @ColumnInfo(name = "lat")
+    private double lat;
+    @ColumnInfo(name = "lon")
+    private double lon;
+
+    @ColumnInfo(name = "path")
     private String path;
+
+    @ColumnInfo(name = "radius")
     private int radius;
 
+    private transient double distance;
+
     public School() {
+        // Required empty args constructor
     }
 
-    public School(String name, double lat, double lon, String path) {
+    public School(@NonNull String name, double lat, double lon, String path, int radius) {
         this.name = name;
         this.lat = lat;
         this.lon = lon;
         this.path = path;
+        this.radius = radius;
+    }
+
+    @Override
+    public int compareTo(@NonNull School school) {
+        if (school.getDistance() == getDistance()) {
+            return school.getName().compareTo(getName());
+        } else if (school.getDistance() < getDistance()) {
+            return 1;
+        } else {
+            return -1;
+        }
     }
 
     @Exclude
@@ -86,10 +116,14 @@ public class School implements Comparable<School> {
     }
 
     @Override
-    public int compareTo(@NonNull School school) {
-        if (school.getDistance() > this.getDistance())
-            return 0;
-        else
-            return 1;
+    public String toString() {
+        return "School{" +
+                "name='" + name + '\'' +
+                ", lat=" + lat +
+                ", lon=" + lon +
+                ", path='" + path + '\'' +
+                ", radius=" + radius +
+                ", distance=" + distance +
+                '}';
     }
 }

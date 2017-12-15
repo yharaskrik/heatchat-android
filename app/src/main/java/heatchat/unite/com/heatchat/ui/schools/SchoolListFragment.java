@@ -2,8 +2,6 @@ package heatchat.unite.com.heatchat.ui.schools;
 
 import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -22,13 +20,11 @@ import heatchat.unite.com.heatchat.R;
 import heatchat.unite.com.heatchat.adapters.SchoolListAdapter;
 import heatchat.unite.com.heatchat.di.Injectable;
 import heatchat.unite.com.heatchat.models.School;
-import heatchat.unite.com.heatchat.viewmodel.SharedViewModel;
+import timber.log.Timber;
 
 /**
  * A simple fragment that displays the list of schools.
- * Activities that contain this fragment must implement the
- * {@link SchoolListFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
+ * <p>
  * Use the {@link SchoolListFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
@@ -43,7 +39,6 @@ public class SchoolListFragment extends Fragment implements Injectable {
     private SchoolListViewModel schoolListViewModel;
     private SchoolListAdapter adapter = new SchoolListAdapter();
     private Unbinder unbinder;
-    private SharedViewModel sharedViewModel;
 
     public SchoolListFragment() {
         // Required empty public constructor
@@ -74,10 +69,11 @@ public class SchoolListFragment extends Fragment implements Injectable {
         super.onActivityCreated(savedInstanceState);
         schoolListViewModel = ViewModelProviders.of(this, viewModelFactory)
                 .get(SchoolListViewModel.class);
-        sharedViewModel = ViewModelProviders.of(getActivity(), viewModelFactory)
-                .get(SharedViewModel.class);
-        schoolListViewModel.getSchools().observe(this, schools -> adapter.setSchools(schools));
-
+        schoolListViewModel.getSchools().observe(this, schools -> {
+            Timber.d("Got new school list %s", schools);
+            adapter.setSchools(schools);
+        });
+        schoolListViewModel.refresh();
     }
 
     @Override
@@ -101,37 +97,7 @@ public class SchoolListFragment extends Fragment implements Injectable {
         unbinder.unbind();
     }
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-//        if (context instanceof OnFragmentInteractionListener) {
-//            mListener = (OnFragmentInteractionListener) context;
-//        } else {
-//            throw new RuntimeException(context.toString()
-//                    + " must implement OnFragmentInteractionListener");
-//        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-    }
-
     private void changeSchool(School school) {
-        sharedViewModel.select(school);
-    }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        void onFragmentInteraction(Uri uri);
+        schoolListViewModel.setCurrentSchool(school);
     }
 }

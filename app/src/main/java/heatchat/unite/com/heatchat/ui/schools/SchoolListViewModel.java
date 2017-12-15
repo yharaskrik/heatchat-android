@@ -1,68 +1,87 @@
 package heatchat.unite.com.heatchat.ui.schools;
 
 import android.arch.lifecycle.LiveData;
-import android.arch.lifecycle.MutableLiveData;
+import android.arch.lifecycle.LiveDataReactiveStreams;
 import android.arch.lifecycle.ViewModel;
+import android.location.Location;
 
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
 
+import heatchat.unite.com.heatchat.models.CurrentSchool;
 import heatchat.unite.com.heatchat.models.School;
+import heatchat.unite.com.heatchat.respository.SchoolRepository;
+import heatchat.unite.com.heatchat.util.DistanceUtil;
+import heatchat.unite.com.heatchat.util.LocationLiveData;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import timber.log.Timber;
 
 /**
- * TODO: Move code to use case class
- * Created by Andrew on 12/10/2017.
+ * A view model for the School Listing.
+ * <p>
+ * This provides methods to get the schools, refresh the school list and set the current school.
  */
 
 public class SchoolListViewModel extends ViewModel {
-    MutableLiveData<List<School>> schools = new MutableLiveData<>();
+    private SchoolRepository repository;
+    private LocationLiveData locationLiveData;
+    private CurrentSchool currentSchool;
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
     @Inject
-    public SchoolListViewModel() {
+    public SchoolListViewModel(SchoolRepository repository, LocationLiveData locationLiveData,
+                               CurrentSchool currentSchool) {
+        this.repository = repository;
+        this.locationLiveData = locationLiveData;
+        this.currentSchool = currentSchool;
+    }
+
+    @Override
+    protected void onCleared() {
+        compositeDisposable.clear();
+        super.onCleared();
     }
 
     public LiveData<List<School>> getSchools() {
-        if (schools.getValue() == null) {
-            FirebaseDatabase.getInstance()
-                    .getReference().child("schools")
-                    .addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(DataSnapshot dataSnapshot) {
-                            if (dataSnapshot.exists()) {
-                                schools.postValue(toSchools(dataSnapshot));
-                            }
-                        }
-
-                        @Override
-                        public void onCancelled(DatabaseError databaseError) {
-
-                        }
-                    });
-        }
-        return schools;
+        return LiveDataReactiveStreams.fromPublisher(repository.schools()
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.computation())
+                .flatMap(schools1 -> {
+                    Flowable<School> schoolFlowable = Flowable.fromIterable(schools1);
+                    final Location value = locationLiveData.getValue();
+                    if (value != null) {
+                        Timber.d("Sorting schools with location %s", value);
+                        schoolFlowable = schoolFlowable.map(school -> {
+                            school.setDistance(DistanceUtil.distance(school, value, 0, 0));
+                            Timber.d(school.toString());
+                            return school;
+                        });
+                    }
+                    return schoolFlowable
+                            .toSortedList()
+                            .toFlowable();
+                })
+                .observeOn(AndroidSchedulers.mainThread()));
     }
 
-    private List<School> toSchools(DataSnapshot dataSnapshot) {
-        List<School> schools = new ArrayList<>();
-        for (DataSnapshot child : dataSnapshot.getChildren()) {
-            School school = child.getValue(School.class);
-/*            if (isLocation) {
-                school.setDistance(distance(latitude,
-                        school.getLat(),
-                        longitude,
-                        school.getLon(),
-                        0.0,
-                        0.0));
-            }*/
-            schools.add(school);
-        }
-        return schools;
+    void refresh() {
+        final Disposable subscribe = repository.refresh()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(() -> {
+                    Timber.d("Got a new schools list.");
+                }, throwable -> {
+                    Timber.e(throwable);
+                });
+        compositeDisposable.add(subscribe);
+    }
+
+    void setCurrentSchool(School school) {
+        currentSchool.setValue(school);
     }
 }

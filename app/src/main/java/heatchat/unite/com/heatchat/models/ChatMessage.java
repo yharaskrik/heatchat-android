@@ -54,7 +54,8 @@ public class ChatMessage implements Comparable<ChatMessage> {
         this.time = new Date().getTime();
     }
 
-    public ChatMessage(String uid, String text, double lat, double lon, String path, String messageID) {
+    public ChatMessage(String uid, String text, double lat, double lon, String path,
+                       String messageID) {
         this.text = text;
         this.uid = uid;
         this.lon = lon;
@@ -74,18 +75,6 @@ public class ChatMessage implements Comparable<ChatMessage> {
         this.time = time;
     }
 
-    @Exclude
-    public Map<String, Object> toMap() {
-        HashMap<String, Object> result = new HashMap<>();
-        result.put("uid", uid);
-        result.put("text", text);
-        result.put("time", time);
-        result.put("lat", lat);
-        result.put("lon", lon);
-
-        return result;
-    }
-
     @Override
     public boolean equals(Object obj) {
 
@@ -103,15 +92,35 @@ public class ChatMessage implements Comparable<ChatMessage> {
     }
 
     @Override
-    public String toString() {
-        return this.getMessageID();
-    }
-
-    @Override
     public int compareTo(ChatMessage message) {
 
         return (int) (this.getTime() - message.getTime());
 
+    }
+
+    @Override
+    public String toString() {
+        return "ChatMessage{" +
+                "messageID='" + messageID + '\'' +
+                ", uid='" + uid + '\'' +
+                ", text='" + text + '\'' +
+                ", time=" + time +
+                ", lat=" + lat +
+                ", lon=" + lon +
+                ", path='" + path + '\'' +
+                '}';
+    }
+
+    @Exclude
+    public Map<String, Object> toMap() {
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("uid", uid);
+        result.put("text", text);
+        result.put("time", time);
+        result.put("lat", lat);
+        result.put("lon", lon);
+
+        return result;
     }
 
     @NonNull

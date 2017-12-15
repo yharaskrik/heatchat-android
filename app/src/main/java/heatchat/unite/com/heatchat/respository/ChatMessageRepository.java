@@ -66,6 +66,7 @@ public class ChatMessageRepository {
         if (chatMessage != null) {
             chatMessage.setPath(school.getPath());
             chatMessage.setMessageID(dataSnapshot.getKey());
+            Timber.d("Adding Message to db %s", chatMessage);
             daoExecutor.execute(() -> chatMessageDao.insertAll(chatMessage));
         }
     }
@@ -121,6 +122,7 @@ public class ChatMessageRepository {
      * @param school     The current school to use.
      */
     private void handleNewMessage(ChildEvent<ChatMessage> childEvent, School school) {
+        childEvent.getValue().setMessageID(childEvent.getDataSnapshot().getKey());
         switch (childEvent.getEvent()) {
             case ChildEvent.ADDED:
                 addMessageToDB(childEvent.getValue(), school, childEvent.getDataSnapshot());

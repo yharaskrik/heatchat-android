@@ -81,7 +81,7 @@ public class ChildEventLiveData<T> extends LiveData<ChildEventLiveData.ChildEven
     private void postEvent(DataSnapshot dataSnapshot, int event) {
         final T value = dataSnapshot.getValue(clazz);
         if (value != null) {
-            postValue(new ChildEvent<>(value, event, dataSnapshot));
+            setValue(new ChildEvent<>(value, event, dataSnapshot));
         }
     }
 

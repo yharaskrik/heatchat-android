@@ -91,7 +91,7 @@ public class UserRepository {
             return;
         }
         String key = databaseReference
-                .child("/user/locations/").push().getKey();
+                .child("/user/locations").push().getKey();
         HashMap<String, Object> hashMap = new HashMap<>();
         hashMap.put("lat", location.getLatitude());
         hashMap.put("lon", location.getLongitude());

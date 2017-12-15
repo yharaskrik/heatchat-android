@@ -11,6 +11,7 @@ import dagger.Module;
 import dagger.Provides;
 import heatchat.unite.com.heatchat.db.AppDatabase;
 import heatchat.unite.com.heatchat.db.ChatMessageDao;
+import heatchat.unite.com.heatchat.db.SchoolDao;
 
 /**
  * App Module to initialize app wide dependencies that require special handling.
@@ -31,6 +32,13 @@ class AppModule {
     ChatMessageDao provideChatMessageDao(AppDatabase appDatabase) {
         return appDatabase.chatMessageDao();
     }
+
+    @Singleton
+    @Provides
+    SchoolDao provideSchoolDao(AppDatabase appDatabase) {
+        return appDatabase.schoolDao();
+    }
+
 
     @Singleton
     @Provides

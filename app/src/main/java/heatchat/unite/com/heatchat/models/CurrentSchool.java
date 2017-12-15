@@ -20,7 +20,7 @@ import javax.inject.Singleton;
 public class CurrentSchool extends MutableLiveData<School> {
 
     @Inject
-    public CurrentSchool() {
+    CurrentSchool() {
         super();
         //TODO Initialize default value
     }
