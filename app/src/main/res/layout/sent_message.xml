@@ -17,7 +17,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="8dp"
-        android:background="@drawable/rounded_rectangle_sent"
         android:maxWidth="240dp"
         android:padding="8dp"
         android:text="hello, hello!"

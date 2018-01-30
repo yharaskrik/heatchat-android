@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
         initializeDrawer();
 
         dataset = new ArrayList<>();
-        messageAdapter = new ChatMessageAdapter(dataset);
+        messageAdapter = new ChatMessageAdapter(dataset, this.getApplicationContext());
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(this.messageAdapter);
         recyclerView.setLayoutManager(llm);
@@ -182,6 +182,8 @@ public class MainActivity extends AppCompatActivity {
         input.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> recyclerView.smoothScrollToPosition(messageAdapter.getItemCount()));
 
         setEditingEnabled(false);
+        if (!schools.isEmpty())
+            changeSchool(schools.get(0));
     }
 
     private void sendLocation() {
