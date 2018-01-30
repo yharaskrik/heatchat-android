@@ -76,6 +76,12 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
         setUpActionBar();
         initializeDrawer();
 
+        dataset = new ArrayList<>();
+        messageAdapter = new ChatMessageAdapter(dataset, this.getApplicationContext());
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setAdapter(this.messageAdapter);
+        recyclerView.setLayoutManager(llm);
+        ((LinearLayoutManager) recyclerView.getLayoutManager()).setStackFromEnd(true);
         checkLocationPermissions();
 
         viewModel.getUser().observe(this, userResult -> {
@@ -102,6 +108,9 @@ public class MainActivity extends AppCompatActivity implements HasSupportFragmen
         viewModel.locationUpdates()
                 .observe(this, location -> Timber.d("Got a new location %s", location));
 
+        setEditingEnabled(false);
+        if (!schools.isEmpty())
+            changeSchool(schools.get(0));
 
     }
 
